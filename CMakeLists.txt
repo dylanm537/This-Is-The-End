@@ -16,3 +16,7 @@ add_executable(thisistheend src/main.cpp src/game_system.cpp)
 target_include_directories(thisistheend PRIVATE include ${SFML_INCS})
 
 target_link_libraries(thisistheend sfml-graphics)
+
+if(MSVC)
+    add_compile_options(/W4)
+endif()
