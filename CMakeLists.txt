@@ -13,7 +13,7 @@ link_directories("${CMAKE_BINARY_DIR}/lib/SFML/lib")
 
 include_directories(${CMAKE_SOURCE_DIR})
 
-add_executable(thisistheend main.cpp game_system.cpp)
+add_executable(thisistheend "src/main.cpp" "src/game_system.cpp")
 
 target_include_directories(thisistheend PRIVATE ${SFML_INCS})
 target_link_libraries(thisistheend sfml-graphics)
