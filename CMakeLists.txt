@@ -11,12 +11,21 @@ add_subdirectory("lib/SFML")
 set(SFML_INCS "lib/SFML/include")
 link_directories("${CMAKE_BINARY_DIR}/lib/SFML/lib")
 
-add_executable(thisistheend src/main.cpp src/game_system.cpp)
+add_executable(thisistheend
+    src/main.cpp
+    src/game_system.cpp
+    src/Menu.cpp
+    src/Player.cpp
+    src/Zombie.cpp      
+)
 
 target_include_directories(thisistheend PRIVATE include ${SFML_INCS})
 
 target_link_libraries(thisistheend sfml-graphics)
 
+file(COPY assets DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
 if(MSVC)
     add_compile_options(/W4)
 endif()
+
