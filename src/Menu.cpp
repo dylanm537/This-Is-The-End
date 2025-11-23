@@ -1,5 +1,5 @@
 // Menu.cpp
-#include "Menu.h"
+#include "Menu.hpp"
 #include <iostream>
 
 Menu::Menu(unsigned int windowW, unsigned int windowH, sf::Texture& bgTexture, const std::string& fontPath)

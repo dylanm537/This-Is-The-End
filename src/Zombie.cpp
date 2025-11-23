@@ -1,5 +1,5 @@
 // Zombie.cpp
-#include "Zombie.h"
+#include "Zombie.hpp"
 #include <cmath>
 #include <random>
 
