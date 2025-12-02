@@ -1,109 +1,126 @@
 #include "Player.hpp"
+#include "game_parameters.hpp"
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/Mouse.hpp>
 #include <cmath>
 
-namespace
+Player::Player()
+    : m_lives(GameParameters::PlayerMaxLives)
+    , m_invulnTimer(0.f)
 {
-    sf::Vector2f normalize(const sf::Vector2f& v)
-    {
-        float lenSq = v.x * v.x + v.y * v.y;
-        if (lenSq == 0.f) return { 0.f, 0.f };
-        float invLen = 1.f / std::sqrt(lenSq);
-        return { v.x * invLen, v.y * invLen };
-    }
+    m_body.setRadius(GameParameters::PlayerRadius);
+    m_body.setOrigin(GameParameters::PlayerRadius, GameParameters::PlayerRadius);
+    m_body.setFillColor(sf::Color::Cyan);
+    reset();
 }
 
-Player::Player(float x, float y, sf::Texture& texture)
-    : speed(220.f)
-    , bulletCooldown(0.18f)
-    , timeSinceLastShot(0.f)
-    , hp(MAX_HP)
+void Player::reset()
 {
-    sprite.setTexture(texture);
-    sf::FloatRect bounds = sprite.getLocalBounds();
-
-    sprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
-    sprite.setPosition(x, y);
+    m_lives = GameParameters::PlayerMaxLives;
+    m_invulnTimer = 0.f;
+    m_body.setPosition(
+        GameParameters::WindowWidth * 0.5f,
+        GameParameters::WindowHeight * 0.5f);
 }
 
-void Player::handleInput(const sf::RenderWindow& window, float dt)
+void Player::handleEvent(const sf::Event& /*event*/)
 {
-    sf::Vector2f dir(0.f, 0.f);
+    // nothing event-based for now
+}
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) dir.y -= 1.f;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) dir.y += 1.f;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) dir.x -= 1.f;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) dir.x += 1.f;
+void Player::update(float dt, const sf::RenderWindow& window)
+{
+    sf::Vector2f movement(0.f, 0.f);
 
-    dir = normalize(dir);
-    sprite.move(dir * speed * dt);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) movement.y -= 1.f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) movement.y += 1.f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) movement.x -= 1.f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) movement.x += 1.f;
 
-    sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-    sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
-    sf::Vector2f toMouse = mouseWorld - sprite.getPosition();
-    float angle = std::atan2(toMouse.y, toMouse.x) * 180.f / 3.14159265f;
-    sprite.setRotation(angle + 90.f); 
-
-    timeSinceLastShot += dt;
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+    if (movement.x != 0.f || movement.y != 0.f)
     {
-        if (timeSinceLastShot >= bulletCooldown)
+        float len = std::sqrt(movement.x * movement.x + movement.y * movement.y);
+        if (len != 0.f)
         {
-            shootTowards(mouseWorld);
-            timeSinceLastShot = 0.f;
+            movement.x /= len;
+            movement.y /= len;
         }
-    }
-}
+        movement.x *= GameParameters::PlayerSpeed * dt;
+        movement.y *= GameParameters::PlayerSpeed * dt;
 
-void Player::update(float /*dt*/)
-{
-    
+        m_body.move(movement);
+    }
+
+    // Keep within window bounds
+    sf::Vector2f pos = m_body.getPosition();
+    if (pos.x < GameParameters::PlayerRadius) pos.x = GameParameters::PlayerRadius;
+    if (pos.y < GameParameters::PlayerRadius) pos.y = GameParameters::PlayerRadius;
+    if (pos.x > GameParameters::WindowWidth - GameParameters::PlayerRadius) pos.x = GameParameters::WindowWidth - GameParameters::PlayerRadius;
+    if (pos.y > GameParameters::WindowHeight - GameParameters::PlayerRadius) pos.y = GameParameters::WindowHeight - GameParameters::PlayerRadius;
+    m_body.setPosition(pos);
+
+    // Rotate towards mouse
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    sf::Vector2f worldPos = window.mapPixelToCoords(mousePos);
+    sf::Vector2f dir = worldPos - m_body.getPosition();
+    float angle = std::atan2(dir.y, dir.x) * 180.f / GameParameters::Pi;
+    m_body.setRotation(angle + 90.f);
 }
 
 void Player::draw(sf::RenderWindow& window) const
 {
-    for (const auto& b : bullets)
+    sf::CircleShape copy = m_body;
+
+    // Flash when invulnerable
+    if (m_invulnTimer > 0.f)
     {
-        window.draw(b.shape);
+        copy.setFillColor(sf::Color(255, 255, 255, 150));
     }
 
-    window.draw(sprite);
+    window.draw(copy);
 }
 
-void Player::shootTowards(const sf::Vector2f& target)
+sf::Vector2f Player::getPosition() const
 {
-    Bullet b;
-    b.shape = sf::CircleShape(4.f);
-    b.shape.setOrigin(4.f, 4.f);
-    b.shape.setFillColor(sf::Color::Yellow);
-    b.shape.setPosition(sprite.getPosition());
-
-    const float bulletSpeed = 460.f;
-    sf::Vector2f dir = normalize(target - sprite.getPosition());
-    b.velocity = dir * bulletSpeed;
-
-    bullets.push_back(b);
+    return m_body.getPosition();
 }
 
-void Player::updateBullets(float dt)
-{   
-    for (auto& b : bullets)
-    {
-        b.shape.move(b.velocity * dt);
-    }
+const sf::CircleShape& Player::getShape() const
+{
+    return m_body;
+}
 
-    auto it = bullets.begin();
-    while (it != bullets.end())
+void Player::damage()
+{
+    if (m_invulnTimer <= 0.f && m_lives > 0)
     {
-        sf::Vector2f p = it->shape.getPosition();
-        if (p.x < -100.f || p.x > 1000.f || p.y < -100.f || p.y > 800.f)
-        {
-            it = bullets.erase(it);
-        }
-        else
-        {
-            ++it;
-        }
+        --m_lives;
+        m_invulnTimer = GameParameters::PlayerInvulnTime;
     }
+}
+
+bool Player::isDead() const
+{
+    return m_lives <= 0;
+}
+
+int Player::getLives() const
+{
+    return m_lives;
+}
+
+void Player::updateInvulnerability(float dt)
+{
+    if (m_invulnTimer > 0.f)
+    {
+        m_invulnTimer -= dt;
+        if (m_invulnTimer < 0.f)
+            m_invulnTimer = 0.f;
+    }
+}
+
+bool Player::isInvulnerable() const
+{
+    return m_invulnTimer > 0.f;
 }

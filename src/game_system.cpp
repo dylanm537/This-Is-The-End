@@ -6,8 +6,15 @@
 #include <cmath>
 #include <iostream>
 
-using param = Parameters;
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Mouse.hpp>
+#include <SFML/System/Time.hpp>
+#include <cstdlib>
+#include <ctime>
+#include <sstream>
+#include <cmath>    // for std::sqrt
 
+<<<<<<< Updated upstream
 sf::Texture GameSystem::spritesheet;
 
 namespace
@@ -81,6 +88,350 @@ void GameSystem::clean()
 {
     g_player.reset();
     g_walls.clear();
+=======
+GameSystem::GameSystem()
+    : m_window(
+        sf::VideoMode(GameParameters::WindowWidth, GameParameters::WindowHeight),
+        GameParameters::WindowTitle)
+    , m_state(State_Menu)
+    , m_score(0)
+    , m_level(0)          // <-- NEW: start at level 0
+    , m_timeSurvived(0.f)
+    , m_spawnTimer(0.f)
+    , m_fireCooldownTimer(0.f)
+{
+    m_window.setFramerateLimit(60);
+
+    // Seed RNG
+    std::srand(static_cast<unsigned int>(std::time(0)));
+
+    // Load font
+    if (!m_font.loadFromFile("assets/yourfont.ttf"))
+    {
+        // If this fails, text will just not show properly
+    }
+
+    // Load background if present
+    if (m_backgroundTexture.loadFromFile("assets/background.png"))
+    {
+        m_backgroundSprite.setTexture(m_backgroundTexture);
+        sf::Vector2u texSize = m_backgroundTexture.getSize();
+        float scaleX = static_cast<float>(GameParameters::WindowWidth) / texSize.x;
+        float scaleY = static_cast<float>(GameParameters::WindowHeight) / texSize.y;
+        m_backgroundSprite.setScale(scaleX, scaleY);
+    }
+
+    // Setup menu
+    m_menu.setBackgroundTexture(&m_backgroundTexture);
+    m_menu.setFont(&m_font);
+
+    // HUD
+    m_hudText.setFont(m_font);
+    m_hudText.setCharacterSize(24);
+    m_hudText.setFillColor(sf::Color::White);
+    m_hudText.setPosition(10.f, 10.f);
+
+    m_gameOverText.setFont(m_font);
+    m_gameOverText.setCharacterSize(40);
+    m_gameOverText.setFillColor(sf::Color::Red);
+    m_gameOverText.setString("GAME OVER\nPress ENTER to restart\nPress ESC to quit");
+    m_gameOverText.setPosition(200.f, 250.f);
+
+    resetGame();
+}
+
+void GameSystem::run()
+{
+    while (m_window.isOpen())
+    {
+        float dt = m_clock.restart().asSeconds();
+        processEvents();
+        update(dt);
+        render();
+    }
+}
+
+void GameSystem::processEvents()
+{
+    sf::Event event;
+    while (m_window.pollEvent(event))
+    {
+        if (event.type == sf::Event::Closed)
+            m_window.close();
+
+        switch (m_state)
+        {
+        case State_Menu:
+            if (m_menu.handleEvent(event))
+            {
+                resetGame();
+                m_state = State_Playing;
+            }
+            break;
+
+        case State_Playing:
+            m_player.handleEvent(event);
+            break;
+
+        case State_GameOver:
+            if (event.type == sf::Event::KeyPressed)
+            {
+                if (event.key.code == sf::Keyboard::Enter)
+                {
+                    resetGame();
+                    m_state = State_Playing;
+                }
+                else if (event.key.code == sf::Keyboard::Escape)
+                {
+                    m_window.close();
+                }
+            }
+            break;
+        }
+    }
+}
+
+void GameSystem::update(float dt)
+{
+    if (m_state == State_Playing)
+    {
+        m_timeSurvived += dt;
+
+        // --- NEW: simple level system, +1 level every 10 seconds ---
+        m_level = static_cast<unsigned int>(m_timeSurvived / 10.f);
+
+        m_spawnTimer += dt;
+        m_fireCooldownTimer -= dt;
+        if (m_fireCooldownTimer < 0.f)
+            m_fireCooldownTimer = 0.f;
+
+        m_player.update(dt, m_window);
+        m_player.updateInvulnerability(dt);
+
+        if (m_spawnTimer >= GameParameters::ZombieSpawnInterval)
+        {
+            spawnZombie();
+            m_spawnTimer = 0.f;
+        }
+
+        handleShooting(dt);
+        updateBullets(dt);
+
+        // Update zombies
+        for (std::size_t i = 0; i < m_zombies.size(); ++i)
+        {
+            m_zombies[i].update(dt, m_player.getPosition());
+        }
+
+        handleCollisions();
+
+        if (m_player.isDead())
+        {
+            m_state = State_GameOver;
+        }
+
+        // Update HUD text (now includes Level)
+        std::ostringstream ss;
+        ss << "Lives: " << m_player.getLives()
+            << "    Score: " << m_score
+            << "    Level: " << m_level
+            << "    Time: " << static_cast<int>(m_timeSurvived);
+        m_hudText.setString(ss.str());
+    }
+}
+
+void GameSystem::render()
+{
+    m_window.clear();
+
+    if (m_state == State_Menu)
+    {
+        if (m_backgroundTexture.getSize().x != 0)
+            m_window.draw(m_backgroundSprite);
+
+        m_menu.draw(m_window);
+    }
+    else if (m_state == State_Playing)
+    {
+        if (m_backgroundTexture.getSize().x != 0)
+            m_window.draw(m_backgroundSprite);
+
+        // Draw bullets behind player so they look clean
+        for (std::size_t i = 0; i < m_bullets.size(); ++i)
+            m_window.draw(m_bullets[i].shape);
+
+        // Draw zombies
+        for (std::size_t i = 0; i < m_zombies.size(); ++i)
+            m_zombies[i].draw(m_window);
+
+        m_player.draw(m_window);
+        m_window.draw(m_hudText);
+    }
+    else if (m_state == State_GameOver)
+    {
+        if (m_backgroundTexture.getSize().x != 0)
+            m_window.draw(m_backgroundSprite);
+
+        m_window.draw(m_gameOverText);
+        m_window.draw(m_hudText);
+    }
+
+    m_window.display();
+}
+
+void GameSystem::resetGame()
+{
+    m_player.reset();
+    m_zombies.clear();
+    m_bullets.clear();
+    m_score = 0;
+    m_level = 0;          // <-- NEW: reset level
+    m_timeSurvived = 0.f;
+    m_spawnTimer = 0.f;
+    m_fireCooldownTimer = 0.f;
+
+    m_clock.restart();
+}
+
+void GameSystem::spawnZombie()
+{
+    // Spawn somewhere just off-screen around the edges
+    float x = 0.f;
+    float y = 0.f;
+
+    int side = std::rand() % 4; // 0=top,1=bottom,2=left,3=right
+
+    switch (side)
+    {
+    case 0: // top
+        x = static_cast<float>(std::rand() % GameParameters::WindowWidth);
+        y = -GameParameters::ZombieRadius * 2.f;
+        break;
+    case 1: // bottom
+        x = static_cast<float>(std::rand() % GameParameters::WindowWidth);
+        y = GameParameters::WindowHeight + GameParameters::ZombieRadius * 2.f;
+        break;
+    case 2: // left
+        x = -GameParameters::ZombieRadius * 2.f;
+        y = static_cast<float>(std::rand() % GameParameters::WindowHeight);
+        break;
+    case 3: // right
+        x = GameParameters::WindowWidth + GameParameters::ZombieRadius * 2.f;
+        y = static_cast<float>(std::rand() % GameParameters::WindowHeight);
+        break;
+    }
+
+    float t = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+    float speed = GameParameters::ZombieMinSpeed +
+        t * (GameParameters::ZombieMaxSpeed - GameParameters::ZombieMinSpeed);
+
+    Zombie z;
+    z.spawn(sf::Vector2f(x, y), speed);
+    m_zombies.push_back(z);
+}
+
+void GameSystem::handleShooting(float /*dt*/)
+{
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left) &&
+        m_fireCooldownTimer <= 0.f)
+    {
+        Bullet b;
+        b.shape.setRadius(GameParameters::BulletRadius);
+        b.shape.setOrigin(GameParameters::BulletRadius, GameParameters::BulletRadius);
+        b.shape.setFillColor(sf::Color::Yellow);
+        b.shape.setPosition(m_player.getPosition());
+
+        sf::Vector2i mousePos = sf::Mouse::getPosition(m_window);
+        sf::Vector2f target = m_window.mapPixelToCoords(mousePos);
+        sf::Vector2f dir = target - m_player.getPosition();
+        float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+        if (len > 0.f)
+        {
+            dir.x /= len;
+            dir.y /= len;
+        }
+        b.velocity = dir * GameParameters::BulletSpeed;
+
+        m_bullets.push_back(b);
+        m_fireCooldownTimer = GameParameters::FireCooldown;
+    }
+}
+
+void GameSystem::updateBullets(float dt)
+{
+    for (std::size_t i = 0; i < m_bullets.size(); ++i)
+    {
+        Bullet& b = m_bullets[i];
+        b.shape.move(b.velocity * dt);
+    }
+
+    // Remove bullets that go off-screen
+    m_bullets.erase(
+        std::remove_if(m_bullets.begin(), m_bullets.end(),
+            [](const Bullet& b)
+            {
+                sf::Vector2f p = b.shape.getPosition();
+    return p.x < -50.f || p.y < -50.f ||
+        p.x > GameParameters::WindowWidth + 50.f ||
+        p.y > GameParameters::WindowHeight + 50.f;
+            }),
+        m_bullets.end());
+}
+
+void GameSystem::handleCollisions()
+{
+    // Bullets vs zombies
+    for (std::size_t i = 0; i < m_bullets.size(); ++i)
+    {
+        sf::FloatRect bulletBounds = m_bullets[i].shape.getGlobalBounds();
+
+        for (std::size_t j = 0; j < m_zombies.size(); ++j)
+        {
+            if (!m_zombies[j].isAlive())
+                continue;
+
+            sf::FloatRect zombieBounds = m_zombies[j].getShape().getGlobalBounds();
+
+            if (bulletBounds.intersects(zombieBounds))
+            {
+                m_zombies[j].kill();
+                m_score += 10;
+                // destroy bullet
+                m_bullets.erase(m_bullets.begin() + i);
+                if (i > 0) --i;
+                break;
+            }
+        }
+    }
+
+    // Remove dead zombies
+    m_zombies.erase(
+        std::remove_if(m_zombies.begin(), m_zombies.end(),
+            [](const Zombie& z) { return !z.isAlive(); }),
+        m_zombies.end());
+
+    // Zombies vs player
+    if (!m_player.isInvulnerable())
+    {
+        sf::FloatRect playerBounds = m_player.getShape().getGlobalBounds();
+
+        for (std::size_t j = 0; j < m_zombies.size(); ++j)
+        {
+            if (!m_zombies[j].isAlive())
+                continue;
+
+            sf::FloatRect zombieBounds = m_zombies[j].getShape().getGlobalBounds();
+            if (playerBounds.intersects(zombieBounds))
+            {
+                m_player.damage();
+                if (m_player.isDead())
+                    return;
+                else
+                    break;
+            }
+        }
+    }
+>>>>>>> Stashed changes
 }
 
 int GameSystem::getScore()
