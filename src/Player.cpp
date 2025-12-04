@@ -39,12 +39,15 @@ void Player::handleInput(const sf::RenderWindow& window, float dt)
     dir = normalize(dir);
     sprite.move(dir * speed * dt);
 
+    // Aim at mouse
     sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
     sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
     sf::Vector2f toMouse = mouseWorld - sprite.getPosition();
-    float angle = std::atan2(toMouse.y, toMouse.x) * 180.f / 3.14159265f;
-    sprite.setRotation(angle + 90.f); 
 
+    float angle = std::atan2(toMouse.y, toMouse.x) * 180.f / 3.14159265f;
+    sprite.setRotation(angle + 90.f);
+
+    // Shooting
     timeSinceLastShot += dt;
     if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
     {
@@ -58,16 +61,17 @@ void Player::handleInput(const sf::RenderWindow& window, float dt)
 
 void Player::update(float /*dt*/)
 {
-    
+    // Player body itself currently has no continuous update logic
 }
 
 void Player::draw(sf::RenderWindow& window) const
 {
+    // Draw bullets
     for (const auto& b : bullets)
-    {
-        window.draw(b.shape);
-    }
+        if (b.alive)
+            window.draw(b.shape);
 
+    // Draw player
     window.draw(sprite);
 }
 
@@ -87,23 +91,26 @@ void Player::shootTowards(const sf::Vector2f& target)
 }
 
 void Player::updateBullets(float dt)
-{   
+{
+    // Move bullets
     for (auto& b : bullets)
     {
-        b.shape.move(b.velocity * dt);
+        if (b.alive)
+            b.shape.move(b.velocity * dt);
     }
 
+    // Remove dead or out-of-bounds bullets
     auto it = bullets.begin();
     while (it != bullets.end())
     {
         sf::Vector2f p = it->shape.getPosition();
-        if (p.x < -100.f || p.x > 1000.f || p.y < -100.f || p.y > 800.f)
-        {
+        bool outOfBounds =
+            (p.x < -100.f || p.x > 1000.f ||
+                p.y < -100.f || p.y > 800.f);
+
+        if (!it->alive || outOfBounds)
             it = bullets.erase(it);
-        }
         else
-        {
             ++it;
-        }
     }
 }

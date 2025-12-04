@@ -1,98 +1,131 @@
 #include <SFML/Graphics.hpp>
-
-#include "game_parameters.hpp"
-#include "game_system.hpp"
 #include "Menu.hpp"
-
-using param = Parameters;
+#include "game_system.hpp"
+#include "game_parameters.hpp"
 
 int main()
 {
     sf::RenderWindow window(
-        sf::VideoMode(param::game_width, param::game_height),
+        sf::VideoMode(Parameters::game_width, Parameters::game_height),
         "This Is The End?"
     );
     window.setFramerateLimit(60);
 
-    sf::Texture menuBgTexture;
-    {
-        sf::Image img;
-        img.create(1, 1, sf::Color(10, 10, 30));
-        menuBgTexture.loadFromImage(img);
-    }
+    // Menu (no background image needed)
+    Menu menu(Parameters::game_width, Parameters::game_height, "assets/arial.ttf");
 
-    Menu menu(param::game_width, param::game_height, menuBgTexture, "assets/arial.ttf");
-
-    GameSystem::init();
-
-    GameState state = GameState::Start;
+    // Game System
+    GameSystem game;
+    game.linkMenu(&menu);
+    game.init();
 
     sf::Clock clock;
 
     while (window.isOpen())
     {
-        float dt = clock.restart().asSeconds();
-
         sf::Event event;
         while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
-            {
                 window.close();
-            }
 
-            if (event.type == sf::Event::KeyPressed)
+            // =====================================================================
+            // NAME ENTRY INPUT HANDLED HERE (IMPORTANT!)
+            // =====================================================================
+            if (menu.state == GameState::NameEntry)
             {
-                if (state == GameState::Start)
+                if (event.type == sf::Event::TextEntered)
                 {
-                    if (event.key.code == sf::Keyboard::Enter)
+                    // A–Z lowercase
+                    if (event.text.unicode >= 'a' && event.text.unicode <= 'z')
                     {
-                        GameSystem::reset();
-                        state = GameState::Playing;
+                        if (menu.playerName.size() < 12)
+                            menu.playerName += std::toupper(event.text.unicode);
                     }
-                    else if (event.key.code == sf::Keyboard::Escape)
+                    // A–Z uppercase
+                    else if (event.text.unicode >= 'A' && event.text.unicode <= 'Z')
                     {
-                        window.close();
+                        if (menu.playerName.size() < 12)
+                            menu.playerName += event.text.unicode;
                     }
-                }
-                else if (state == GameState::Playing)
-                {                   
-                    if (event.key.code == sf::Keyboard::Escape)
+                    // Backspace
+                    else if (event.text.unicode == 8)
                     {
-                        state = GameState::GameOver;
-                    }
-                }
-                else if (state == GameState::GameOver)
-                {
-                    if (event.key.code == sf::Keyboard::Enter)
-                    {
-                        GameSystem::reset();
-                        state = GameState::Playing;
-                    }
-                    else if (event.key.code == sf::Keyboard::Escape)
-                    {
-                        window.close();
+                        if (!menu.playerName.empty())
+                            menu.playerName.pop_back();
                     }
                 }
             }
         }
 
-        if (state == GameState::Start)
+        float dt = clock.restart().asSeconds();
+
+        // =====================================================================
+        // START SCREEN
+        // =====================================================================
+        if (menu.state == GameState::Start)
         {
             menu.drawStart(window);
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+                menu.state = GameState::NameEntry;
+
+            continue;
         }
-        else if (state == GameState::Playing)
+
+        // =====================================================================
+        // NAME ENTRY SCREEN
+        // =====================================================================
+        if (menu.state == GameState::NameEntry)
         {
-            GameSystem::update(dt, window);
-            GameSystem::render(window);
-            window.display();
+            if (!menu.playerName.empty() &&
+                sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+            {
+                menu.state = GameState::Playing;
+                game.reset();
+            }
+
+            menu.drawNameEntry(window);
+            continue;
         }
-        else if (state == GameState::GameOver)
+
+        // =====================================================================
+        // GAME OVER SCREEN
+        // =====================================================================
+        if (menu.state == GameState::GameOver)
         {
-            menu.drawGameOver(window, GameSystem::getScore());
+            menu.drawGameOver(window, game.getScore());
+
+            // Restart
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+            {
+                menu.state = GameState::Start;
+                menu.playerName.clear();
+            }
+
+            // Quit
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+                window.close();
+
+            continue;
+        }
+
+        // =====================================================================
+        // PLAYING THE GAME
+        // =====================================================================
+        if (menu.state == GameState::Playing)
+        {
+            game.update(dt, window);
+
+            if (game.isGameOver())
+            {
+                menu.state = GameState::GameOver;
+                continue;
+            }
+
+            game.render(window);
         }
     }
 
-    GameSystem::clean();
     return 0;
 }

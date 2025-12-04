@@ -1,6 +1,8 @@
 #include "game_system.hpp"
 #include "game_parameters.hpp"
 #include "Player.hpp"
+#include "Zombie.hpp"
+#include "Menu.hpp"
 
 #include <SFML/Graphics.hpp>
 #include <cmath>
@@ -8,155 +10,238 @@
 
 using param = Parameters;
 
+// Shared spritesheet
 sf::Texture GameSystem::spritesheet;
 
+// Internal game data
 namespace
 {
     std::unique_ptr<Player> g_player;
     std::vector<sf::RectangleShape> g_walls;
+    std::vector<Zombie> g_zombies;
 
-    sf::Font g_hudFont;
-    bool     g_hudFontLoaded = false;
+    float g_zombieSpawnTimer = 0.f;
+    float g_zombieSpawnInterval = 5.f;
 
-    int      g_score = 0;
+    float g_difficultyTimer = 0.f;
+    int g_zombiesPerWave = 3;
+
+    const float g_difficultyIncreaseInterval = 50.f;
+
+    float g_damageCooldown = 0.f;
+    const float g_damageInterval = 0.4f;
+
+    int g_score = 0;
+
+    Menu* g_menu = nullptr;   // link from main
+
+    GameState g_gameState = GameState::Playing; // IMPORTANT
 }
 
-static sf::Texture createSolidTexture(unsigned int size, sf::Color color)
+void GameSystem::linkMenu(Menu* m)
+{
+    g_menu = m;
+}
+
+// Helper to make a texture
+static sf::Texture createSolidTexture(unsigned size, sf::Color c)
 {
     sf::Image img;
-    img.create(size, size, color);
+    img.create(size, size, c);
+    sf::Texture t;
+    t.loadFromImage(img);
+    return t;
+}
 
-    sf::Texture tex;
-    tex.loadFromImage(img);
-    return tex;
+static void spawnZombies(int count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        float x = param::game_width + 40.f;
+        float y = 50 + std::rand() % (param::game_height - 100);
+        g_zombies.emplace_back(x, y, GameSystem::spritesheet);
+    }
 }
 
 void GameSystem::init()
 {
-    if (spritesheet.getSize().x == 0 || spritesheet.getSize().y == 0)
-    {
+    if (spritesheet.getSize().x == 0)
         spritesheet = createSolidTexture(32, sf::Color::Cyan);
-    }
 
-    g_player = std::make_unique<Player>(
-        100.f,
-        100.f,
-        spritesheet
-        );
+    g_player = std::make_unique<Player>(100.f, 100.f, spritesheet);
 
+    // walls
     g_walls.clear();
-
-    auto makeWall = [](sf::Vector2f pos, sf::Vector2f size, sf::Color color)
+    auto makeWall = [](sf::Vector2f pos, sf::Vector2f size)
     {
-        sf::RectangleShape wall(size);
-        wall.setFillColor(color);
-        wall.setOrigin(size.x / 2.f, size.y / 2.f);
-        wall.setPosition(pos);
-        return wall;
+        sf::RectangleShape w(size);
+        w.setOrigin(size.x / 2, size.y / 2);
+        w.setFillColor(sf::Color(80, 80, 80));
+        w.setPosition(pos);
+        return w;
     };
 
-    g_walls.push_back(makeWall({ 400.f, 300.f }, { 200.f, 40.f }, sf::Color(80, 80, 80)));
-    g_walls.push_back(makeWall({ 200.f, 200.f }, { 40.f, 180.f }, sf::Color(90, 90, 90)));
-    g_walls.push_back(makeWall({ 600.f, 400.f }, { 40.f, 220.f }, sf::Color(90, 90, 90)));
+    g_walls.push_back(makeWall({ 400,300 }, { 200,40 }));
+    g_walls.push_back(makeWall({ 200,200 }, { 40,180 }));
+    g_walls.push_back(makeWall({ 600,400 }, { 40,220 }));
 
-    if (g_hudFont.loadFromFile("assets/arial.ttf"))
-    {
-        g_hudFontLoaded = true;
-    }
-    else
-    {
-        g_hudFontLoaded = false;
-        std::cerr << "Warning: could not load HUD font at assets/arial.ttf. HUD text will not be shown.\n";
-    }
+    // Reset game content
+    g_zombies.clear();
+    g_zombieSpawnTimer = 0.f;
+    g_difficultyTimer = 0.f;
+    g_zombiesPerWave = 3;
+    g_damageCooldown = 0.f;
 
     g_score = 0;
+
+    // DO NOT TOUCH game state here
+    // main controls the flow
 }
 
 void GameSystem::reset()
 {
-    init();
+    init();  // Also MUST NOT change game state
 }
 
 void GameSystem::clean()
 {
     g_player.reset();
+    g_zombies.clear();
     g_walls.clear();
 }
 
-int GameSystem::getScore()
+int GameSystem::getScore() const
 {
     return g_score;
 }
 
+bool GameSystem::isGameOver() const
+{
+    return (g_gameState == GameState::GameOver);
+}
+
 void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 {
-    if (!g_player)
+    // Only run gameplay logic when menu says "Playing"
+    if (!g_menu || g_menu->state != GameState::Playing)
         return;
 
-    sf::Vector2f previousPos = g_player->getCenter();
+    g_damageCooldown -= dt;
 
+    sf::Vector2f prevPos = g_player->getCenter();
     g_player->handleInput(window, dt);
     g_player->update(dt);
     g_player->updateBullets(dt);
 
-    sf::FloatRect playerBounds = g_player->getBounds();
-
-    for (const auto& wall : g_walls)
+    // Player vs. walls
+    sf::FloatRect pBounds = g_player->getBounds();
+    for (auto& w : g_walls)
     {
-        if (playerBounds.intersects(wall.getGlobalBounds()))
+        if (pBounds.intersects(w.getGlobalBounds()))
         {
-            // move player back by difference
-            sf::Vector2f currentPos = g_player->getCenter();
-            sf::Vector2f correction = previousPos - currentPos;
-            g_player->moveBy(correction);
+            g_player->moveBy(prevPos - g_player->getCenter());
             break;
         }
+    }
+
+    // Update zombies
+    sf::Vector2f p = g_player->getCenter();
+    for (auto& z : g_zombies)
+        z.update(p, dt, g_walls);
+
+    // Damage
+    if (g_damageCooldown <= 0.f)
+    {
+        for (auto& z : g_zombies)
+        {
+            if (!z.isDead() && pBounds.intersects(z.getBounds()))
+            {
+                g_player->takeDamage(1);
+                g_damageCooldown = g_damageInterval;
+                break;
+            }
+        }
+    }
+
+    // Bullet hits
+    for (auto& b : g_player->getBullets())
+    {
+        if (!b.isAlive()) continue;
+
+        for (auto& z : g_zombies)
+        {
+            if (!z.isDead() && b.getBounds().intersects(z.getBounds()))
+            {
+                z.damage(1);
+                b.kill();
+
+                if (z.isDead())
+                    g_score++;
+
+                break;
+            }
+        }
+    }
+
+    // Remove dead zombies
+    g_zombies.erase(
+        std::remove_if(g_zombies.begin(), g_zombies.end(),
+            [](const Zombie& z) { return z.isDead(); }),
+        g_zombies.end()
+    );
+
+    // Difficulty increase
+    g_difficultyTimer += dt;
+    if (g_difficultyTimer >= g_difficultyIncreaseInterval)
+    {
+        g_difficultyTimer = 0.f;
+        g_zombiesPerWave += 3;
+    }
+
+    // Spawning waves
+    g_zombieSpawnTimer += dt;
+    if (g_zombieSpawnTimer >= g_zombieSpawnInterval)
+    {
+        g_zombieSpawnTimer = 0.f;
+        spawnZombies(g_zombiesPerWave);
+    }
+
+    // Player died ? GameOver
+    if (g_player->getHP() <= 0)
+    {
+        g_gameState = GameState::GameOver;
+        g_menu->state = GameState::GameOver;
     }
 }
 
 void GameSystem::render(sf::RenderWindow& window)
 {
-    if (!g_player)
+    if (!g_menu || g_menu->state != GameState::Playing)
         return;
 
     window.clear(sf::Color(25, 25, 40));
 
-    for (const auto& wall : g_walls)
-    {
-        window.draw(wall);
-    }
+    for (auto& w : g_walls)
+        window.draw(w);
+
+    for (auto& z : g_zombies)
+        z.draw(window);
 
     g_player->draw(window);
 
-    if (g_hudFontLoaded)
-    {
-        sf::Text help;
-        help.setFont(g_hudFont);
-        help.setCharacterSize(16);
-        help.setFillColor(sf::Color::White);
-        help.setString("WASD: Move    Mouse: Aim    LMB: Shoot");
-        help.setPosition(10.f, static_cast<float>(param::game_height) - 30.f);
-        window.draw(help);
+    // HUD
+    sf::Font hudFont;
+    hudFont.loadFromFile("assets/arial.ttf");
 
-        sf::Text hp;
-        hp.setFont(g_hudFont);
-        hp.setCharacterSize(18);
-        hp.setFillColor(sf::Color::White);
-        hp.setString("HP: " + std::to_string(g_player->getHP()));
-        hp.setPosition(10.f, 10.f);
-        window.draw(hp);
-    }
+    sf::Text hp("HP: " + std::to_string(g_player->getHP()), hudFont, 18);
+    hp.setFillColor(sf::Color::White);
+    hp.setPosition(10, 10);
+    window.draw(hp);
 
-    sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-    sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
+    sf::Text sc("Score: " + std::to_string(g_score), hudFont, 18);
+    sc.setFillColor(sf::Color::Cyan);
+    sc.setPosition(param::game_width - 120, 10);
+    window.draw(sc);
 
-    const float cs = 8.f;
-    sf::Vertex lines[4] =
-    {
-        sf::Vertex(sf::Vector2f(mouseWorld.x - cs, mouseWorld.y), sf::Color::White),
-        sf::Vertex(sf::Vector2f(mouseWorld.x + cs, mouseWorld.y), sf::Color::White),
-        sf::Vertex(sf::Vector2f(mouseWorld.x, mouseWorld.y - cs), sf::Color::White),
-        sf::Vertex(sf::Vector2f(mouseWorld.x, mouseWorld.y + cs), sf::Color::White),
-    };
-    window.draw(lines, 4, sf::Lines);
+    window.display();
 }

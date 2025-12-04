@@ -1,4 +1,4 @@
-// Player.h
+// Player.hpp
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
@@ -6,6 +6,14 @@
 struct Bullet {
     sf::CircleShape shape;
     sf::Vector2f velocity;
+    bool alive = true;
+
+    void kill() { alive = false; }
+    bool isAlive() const { return alive; }
+
+    sf::FloatRect getBounds() const {
+        return shape.getGlobalBounds();
+    }
 };
 
 class Player {
@@ -27,15 +35,16 @@ public:
 
     std::vector<Bullet>& getBullets() { return bullets; }
 
-    // allow small external pushback for collision handling
     void moveBy(const sf::Vector2f& offset) { sprite.move(offset); }
 
 private:
     sf::Sprite sprite;
     float speed;
-    std::vector<Bullet> bullets;
-    float bulletCooldown; // seconds
+    float bulletCooldown;
     float timeSinceLastShot;
+
+    std::vector<Bullet> bullets;
+
     int hp;
     static constexpr int MAX_HP = 10;
 };
