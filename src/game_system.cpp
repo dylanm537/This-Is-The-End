@@ -35,7 +35,7 @@ namespace
 
     Menu* g_menu = nullptr;   // link from main
 
-    GameState g_gameState = GameState::Playing; // IMPORTANT
+    GameState g_gameState = GameState::Playing;
 }
 
 void GameSystem::linkMenu(Menu* m)
@@ -93,14 +93,11 @@ void GameSystem::init()
     g_damageCooldown = 0.f;
 
     g_score = 0;
-
-    // DO NOT TOUCH game state here
-    // main controls the flow
 }
 
 void GameSystem::reset()
 {
-    init();  // Also MUST NOT change game state
+    init();
 }
 
 void GameSystem::clean()
@@ -122,7 +119,7 @@ bool GameSystem::isGameOver() const
 
 void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 {
-    // Only run gameplay logic when menu says "Playing"
+    // Only run gameplay logic when menu says Playing
     if (!g_menu || g_menu->state != GameState::Playing)
         return;
 
@@ -133,7 +130,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
     g_player->update(dt);
     g_player->updateBullets(dt);
 
-    // Player vs. walls
+    // Player vs walls
     sf::FloatRect pBounds = g_player->getBounds();
     for (auto& w : g_walls)
     {
@@ -242,6 +239,4 @@ void GameSystem::render(sf::RenderWindow& window)
     sc.setFillColor(sf::Color::Cyan);
     sc.setPosition(param::game_width - 120, 10);
     window.draw(sc);
-
-    window.display();
 }

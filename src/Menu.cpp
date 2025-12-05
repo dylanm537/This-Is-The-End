@@ -36,7 +36,7 @@ Menu::Menu(unsigned int windowW, unsigned int windowH, const std::string& fontPa
 
 void Menu::drawStart(sf::RenderWindow& w)
 {
-    w.clear(sf::Color(15, 15, 30)); // simple dark background
+    w.clear(sf::Color(15, 15, 30));
     w.draw(titleText);
 
     sf::Text info("Press ENTER to Continue\nPress ESC to Quit", font, 22);
@@ -44,7 +44,6 @@ void Menu::drawStart(sf::RenderWindow& w)
     info.setPosition(w.getSize().x / 2.f - info.getGlobalBounds().width / 2.f, 350.f);
 
     w.draw(info);
-    w.display();
 }
 
 void Menu::drawNameEntry(sf::RenderWindow& w)
@@ -60,8 +59,6 @@ void Menu::drawNameEntry(sf::RenderWindow& w)
     info.setFillColor(sf::Color(200, 200, 200));
     info.setPosition(w.getSize().x / 2.f - info.getGlobalBounds().width / 2.f, 380.f);
     w.draw(info);
-
-    w.display();
 }
 
 void Menu::drawGameOver(sf::RenderWindow& w, int score)
@@ -83,6 +80,4 @@ void Menu::drawGameOver(sf::RenderWindow& w, int score)
     info.setFillColor(sf::Color(230, 230, 230));
     info.setPosition(w.getSize().x / 2.f - info.getGlobalBounds().width / 2.f, 330.f);
     w.draw(info);
-
-    w.display();
 }

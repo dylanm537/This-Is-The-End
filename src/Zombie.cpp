@@ -24,9 +24,9 @@ Zombie::Zombie(float x, float y, sf::Texture& texture)
     sprite.setScale(scale, scale);
 }
 
-// ---------------------------------------------------------------------------
-// BASIC UPDATE (if called elsewhere)
-// ---------------------------------------------------------------------------
+
+// BASIC UPDATE
+
 void Zombie::update(const sf::Vector2f& playerPos, float dt)
 {
     sf::Vector2f pos = sprite.getPosition();
@@ -42,9 +42,9 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt)
     sprite.setRotation(angle + 90.f);
 }
 
-// ---------------------------------------------------------------------------
-// WALL-AWARE UPDATE (FINAL VERSION)
-// ---------------------------------------------------------------------------
+
+// WALL-AWARE 
+
 void Zombie::update(const sf::Vector2f& playerPos, float dt,
     const std::vector<sf::RectangleShape>& walls)
 {
@@ -77,14 +77,14 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
         }
     }
 
-    // No collision ? normal move
+    // if no collision then can move
     if (!blocked)
     {
         sprite.setPosition(nextPos);
     }
     else
     {
-        // WALL AVOIDANCE — slide left or right
+        // WALL AVOIDANCE
         sf::Vector2f leftNormal(-dir.y, dir.x);  // rotate 90°
         sf::Vector2f leftTry = pos + leftNormal * speed * dt;
         sf::Vector2f rightTry = pos - leftNormal * speed * dt;
@@ -109,7 +109,7 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
             sprite.setPosition(leftTry);
         else if (rightOK)
             sprite.setPosition(rightTry);
-        // else: stuck (rare), don't move
+        // else stuck dont move
     }
 
     // Rotate toward player
@@ -117,9 +117,9 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
     sprite.setRotation(angle + 90.f);
 }
 
-// ---------------------------------------------------------------------------
+
 // DRAW
-// ---------------------------------------------------------------------------
+
 void Zombie::draw(sf::RenderWindow& window) const
 {
     if (hp <= 0)

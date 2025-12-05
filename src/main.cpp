@@ -2,6 +2,7 @@
 #include "Menu.hpp"
 #include "game_system.hpp"
 #include "game_parameters.hpp"
+#include <iostream>
 
 int main()
 {
@@ -9,6 +10,21 @@ int main()
         sf::VideoMode(Parameters::game_width, Parameters::game_height),
         "This Is The End?"
     );
+
+    sf::Texture crosshairTex;
+    if (!crosshairTex.loadFromFile("assets/crosshair.png")) {
+        std::cout << "FAILED TO LOAD CROSSHAIR\n";
+    }
+
+    sf::Sprite crosshair(crosshairTex);
+    crosshair.setOrigin(crosshairTex.getSize().x / 2, crosshairTex.getSize().y / 2);
+
+    crosshair.setScale(0.075f, 0.075f);
+
+    // hide cursor
+    window.setMouseCursorVisible(false);
+
+
     window.setFramerateLimit(60);
 
     // Menu (no background image needed)
@@ -29,9 +45,8 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
 
-            // =====================================================================
-            // NAME ENTRY INPUT HANDLED HERE (IMPORTANT!)
-            // =====================================================================
+            // NAME ENTRY INPUT HANDLED HERE
+
             if (menu.state == GameState::NameEntry)
             {
                 if (event.type == sf::Event::TextEntered)
@@ -60,12 +75,17 @@ int main()
 
         float dt = clock.restart().asSeconds();
 
-        // =====================================================================
         // START SCREEN
-        // =====================================================================
+
         if (menu.state == GameState::Start)
         {
             menu.drawStart(window);
+
+            sf::Vector2i mp = sf::Mouse::getPosition(window);
+            crosshair.setPosition((float)mp.x, (float)mp.y);
+            window.draw(crosshair);
+
+            window.display();
 
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
                 menu.state = GameState::NameEntry;
@@ -73,9 +93,9 @@ int main()
             continue;
         }
 
-        // =====================================================================
+
         // NAME ENTRY SCREEN
-        // =====================================================================
+
         if (menu.state == GameState::NameEntry)
         {
             if (!menu.playerName.empty() &&
@@ -86,15 +106,28 @@ int main()
             }
 
             menu.drawNameEntry(window);
+
+            sf::Vector2i mp = sf::Mouse::getPosition(window);
+            crosshair.setPosition((float)mp.x, (float)mp.y);
+            window.draw(crosshair);
+
+            window.display();
+
             continue;
         }
 
-        // =====================================================================
+
         // GAME OVER SCREEN
-        // =====================================================================
+
         if (menu.state == GameState::GameOver)
         {
             menu.drawGameOver(window, game.getScore());
+
+            sf::Vector2i mp = sf::Mouse::getPosition(window);
+            crosshair.setPosition((float)mp.x, (float)mp.y);
+            window.draw(crosshair);
+
+            window.display();
 
             // Restart
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
@@ -110,9 +143,9 @@ int main()
             continue;
         }
 
-        // =====================================================================
+
         // PLAYING THE GAME
-        // =====================================================================
+
         if (menu.state == GameState::Playing)
         {
             game.update(dt, window);
@@ -124,6 +157,14 @@ int main()
             }
 
             game.render(window);
+            // update crosshiar
+            sf::Vector2i mp = sf::Mouse::getPosition(window);
+            crosshair.setPosition((float)mp.x, (float)mp.y);
+
+            // Draw crosshair LAST
+            window.draw(crosshair);
+
+            window.display();
         }
     }
 

@@ -25,6 +25,12 @@ target_link_libraries(thisistheend sfml-graphics)
 
 file(COPY assets DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+add_custom_command(TARGET thisistheend POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:thisistheend>/assets)
+
+
 if(MSVC)
     add_compile_options(/W4)
 endif()

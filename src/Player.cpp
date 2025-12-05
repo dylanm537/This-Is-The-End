@@ -61,7 +61,7 @@ void Player::handleInput(const sf::RenderWindow& window, float dt)
 
 void Player::update(float /*dt*/)
 {
-    // Player body itself currently has no continuous update logic
+    // Player body
 }
 
 void Player::draw(sf::RenderWindow& window) const
