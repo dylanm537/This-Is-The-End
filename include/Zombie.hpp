@@ -6,11 +6,11 @@ class Zombie {
 public:
     Zombie(float x, float y, sf::Texture& texture);
 
-    // NEW: wall-aware update
+   
     void update(const sf::Vector2f& playerPos, float dt,
         const std::vector<sf::RectangleShape>& walls);
 
-    // Optional (old update kept if other parts use it)
+    
     void update(const sf::Vector2f& playerPos, float dt);
 
     void draw(sf::RenderWindow& window) const;

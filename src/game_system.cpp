@@ -2,7 +2,6 @@
 #include "game_parameters.hpp"
 #include "Player.hpp"
 #include "Zombie.hpp"
-#include "Menu.hpp"
 
 #include <SFML/Graphics.hpp>
 #include <cmath>
@@ -33,14 +32,7 @@ namespace
 
     int g_score = 0;
 
-    Menu* g_menu = nullptr;   // link from main
-
-    GameState g_gameState = GameState::Playing;
-}
-
-void GameSystem::linkMenu(Menu* m)
-{
-    g_menu = m;
+    bool g_isGameOver = false; 
 }
 
 // Helper to make a texture
@@ -93,6 +85,7 @@ void GameSystem::init()
     g_damageCooldown = 0.f;
 
     g_score = 0;
+    g_isGameOver = false;
 }
 
 void GameSystem::reset()
@@ -114,15 +107,11 @@ int GameSystem::getScore() const
 
 bool GameSystem::isGameOver() const
 {
-    return (g_gameState == GameState::GameOver);
+    return g_isGameOver;
 }
 
 void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 {
-    // Only run gameplay logic when menu says Playing
-    if (!g_menu || g_menu->state != GameState::Playing)
-        return;
-
     g_damageCooldown -= dt;
 
     sf::Vector2f prevPos = g_player->getCenter();
@@ -130,7 +119,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
     g_player->update(dt);
     g_player->updateBullets(dt);
 
-    // Player vs walls
+    // Player vs. walls
     sf::FloatRect pBounds = g_player->getBounds();
     for (auto& w : g_walls)
     {
@@ -203,19 +192,15 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         spawnZombies(g_zombiesPerWave);
     }
 
-    // Player died ? GameOver
+   
     if (g_player->getHP() <= 0)
     {
-        g_gameState = GameState::GameOver;
-        g_menu->state = GameState::GameOver;
+        g_isGameOver = true;
     }
 }
 
 void GameSystem::render(sf::RenderWindow& window)
 {
-    if (!g_menu || g_menu->state != GameState::Playing)
-        return;
-
     window.clear(sf::Color(25, 25, 40));
 
     for (auto& w : g_walls)

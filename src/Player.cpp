@@ -39,7 +39,7 @@ void Player::handleInput(const sf::RenderWindow& window, float dt)
     dir = normalize(dir);
     sprite.move(dir * speed * dt);
 
-    // Aim at mouse
+
     sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
     sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
     sf::Vector2f toMouse = mouseWorld - sprite.getPosition();
@@ -47,7 +47,7 @@ void Player::handleInput(const sf::RenderWindow& window, float dt)
     float angle = std::atan2(toMouse.y, toMouse.x) * 180.f / 3.14159265f;
     sprite.setRotation(angle + 90.f);
 
-    // Shooting
+ 
     timeSinceLastShot += dt;
     if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
     {
@@ -99,7 +99,7 @@ void Player::updateBullets(float dt)
             b.shape.move(b.velocity * dt);
     }
 
-    // Remove dead or out-of-bounds bullets
+    // Remove dead or out ofbounds bullets
     auto it = bullets.begin();
     while (it != bullets.end())
     {

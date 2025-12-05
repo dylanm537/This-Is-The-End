@@ -3,7 +3,6 @@
 #include <random>
 #include <algorithm>
 
-// random float helper
 static float randFloat(float a, float b) {
     static std::mt19937 rng((unsigned)std::random_device{}());
     std::uniform_real_distribution<float> d(a, b);
@@ -25,7 +24,6 @@ Zombie::Zombie(float x, float y, sf::Texture& texture)
 }
 
 
-// BASIC UPDATE
 
 void Zombie::update(const sf::Vector2f& playerPos, float dt)
 {
@@ -43,7 +41,6 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt)
 }
 
 
-// WALL-AWARE 
 
 void Zombie::update(const sf::Vector2f& playerPos, float dt,
     const std::vector<sf::RectangleShape>& walls)
@@ -60,7 +57,7 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
 
     dir /= len;
 
-    // Predict next position
+
     sf::Vector2f nextPos = pos + dir * speed * dt;
     sf::FloatRect nextBounds = sprite.getGlobalBounds();
     nextBounds.left = nextPos.x - nextBounds.width * 0.5f;
@@ -77,15 +74,15 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
         }
     }
 
-    // if no collision then can move
+  
     if (!blocked)
     {
         sprite.setPosition(nextPos);
     }
     else
     {
-        // WALL AVOIDANCE
-        sf::Vector2f leftNormal(-dir.y, dir.x);  // rotate 90°
+       
+        sf::Vector2f leftNormal(-dir.y, dir.x);  
         sf::Vector2f leftTry = pos + leftNormal * speed * dt;
         sf::Vector2f rightTry = pos - leftNormal * speed * dt;
 
@@ -109,16 +106,16 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
             sprite.setPosition(leftTry);
         else if (rightOK)
             sprite.setPosition(rightTry);
-        // else stuck dont move
+        
     }
 
-    // Rotate toward player
+  
     float angle = std::atan2(dir.y, dir.x) * 180.f / 3.14159265f;
     sprite.setRotation(angle + 90.f);
 }
 
 
-// DRAW
+
 
 void Zombie::draw(sf::RenderWindow& window) const
 {
@@ -127,7 +124,7 @@ void Zombie::draw(sf::RenderWindow& window) const
 
     window.draw(sprite);
 
-    // HP bar
+ 
     sf::Vector2f p = sprite.getPosition();
 
     sf::RectangleShape back({ 30.f, 4.f });

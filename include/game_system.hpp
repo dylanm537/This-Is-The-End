@@ -1,8 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 
-class Menu;
-
 class GameSystem
 {
 public:
@@ -16,10 +14,9 @@ public:
     void render(sf::RenderWindow& window);
 
     int getScore() const;
-    void linkMenu(Menu* m);
 
     bool isGameOver() const;
 
-public: // You chose option 2
+public:
     static sf::Texture spritesheet;
 };
