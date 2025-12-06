@@ -1,7 +1,9 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
-
+// bullet : fired by player
+//velocity vector
+//Alive flag for deletion control
 struct Bullet {
     sf::CircleShape shape;
 
@@ -16,7 +18,7 @@ struct Bullet {
         return shape.getGlobalBounds();
     }
 };
-
+// player : movements , rotation, shooting, bullet storage and update and Hp tracking 
 class Player {
 public:
     Player(float x, float y, sf::Texture& texture);
@@ -28,7 +30,7 @@ public:
 
     void shootTowards(const sf::Vector2f& target);
     void updateBullets(float dt);
-
+    // player sprite is centered and scaled for consistency
     sf::FloatRect getBounds() const { return sprite.getGlobalBounds(); }
 
     sf::Vector2f getCenter() const { return sprite.getPosition(); }
@@ -38,7 +40,7 @@ public:
     void takeDamage(int amount) { hp -= amount; if (hp < 0) hp = 0; }
 
     int getHP() const { return hp; }
-
+    //bullets collision handling in GameSystem
     std::vector<Bullet>& getBullets() { return bullets; }
 
     void moveBy(const sf::Vector2f& offset) { sprite.move(offset); }

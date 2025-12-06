@@ -3,7 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <algorithm> 
-
+// ensures consistent movement speedin diaogonal directions 
 namespace
 {
     sf::Vector2f normalize(const sf::Vector2f& v)
@@ -17,7 +17,8 @@ namespace
         return { v.x * invLen, v.y * invLen };
     }
 }
-
+// player constructor loads sprite texture, set size, centers
+// movement and firing cooldown and hp 
 Player::Player(float x, float y, sf::Texture& texture)
     : speed(220.f)
     , bulletCooldown(0.18f)
@@ -38,7 +39,7 @@ Player::Player(float x, float y, sf::Texture& texture)
 
     sprite.setPosition(x, y);
 }
-
+// handles movement , rotation and mouse shooting 
 void Player::handleInput(const sf::RenderWindow& window, float dt)
 {
     sf::Vector2f dir(0.f, 0.f);
@@ -93,7 +94,7 @@ void Player::draw(sf::RenderWindow& window) const
     
     window.draw(sprite);
 }
-
+// bullet spawn 
 void Player::shootTowards(const sf::Vector2f& target)
 {
     Bullet b;
@@ -117,7 +118,7 @@ void Player::shootTowards(const sf::Vector2f& target)
 
     bullets.push_back(b);
 }
-
+// moves bullet forward and removes bullets that go off screen 
 void Player::updateBullets(float dt)
 {
     
@@ -127,7 +128,7 @@ void Player::updateBullets(float dt)
             b.shape.move(b.velocity * dt);
     }
 
-    
+    // delets bullets
     bullets.erase(
         std::remove_if(bullets.begin(), bullets.end(),
             [](const Bullet& b) {
