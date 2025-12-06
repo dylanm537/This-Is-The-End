@@ -4,7 +4,8 @@
 #include <SFML/Audio.hpp> 
 
 class MenuState;
-
+// playing state 
+// runs the actuall game loop
 class PlayingState : public State
 {
 public:
@@ -19,9 +20,9 @@ public:
     void render(sf::RenderWindow& window) override;
 
 private:
-    GameSystem gameSystem;
+    GameSystem gameSystem; // has gamesystem which manages player, zombies, walls, scoring
 
-    MenuState& menuStateRef;
+    MenuState& menuStateRef; // allows returning score to menu
 
-    sf::Music backgroundMusic;
+    sf::Music backgroundMusic; // looping gameplay music 
 };

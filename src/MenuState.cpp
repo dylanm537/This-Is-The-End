@@ -9,7 +9,7 @@ using namespace std;
 
 namespace
 {
-
+    // file name and sort helper
     const std::string SCORES_FILE = "highscores.dat";
     const size_t MAX_HIGH_SCORES = 5;
     const size_t maxNameLength = 10;
@@ -19,7 +19,7 @@ namespace
         return a.score > b.score;
     }
 }
-
+// loads score entries and if the file does not exist topScore remains empty
 void MenuState::loadScores()
 {
     topScores.clear();
@@ -36,11 +36,11 @@ void MenuState::loadScores()
         }
 
         file.close();
-
+        // sort highest to lowest
         std::sort(topScores.begin(), topScores.end(), compareScores);
     }
 }
-
+// save top 5 scores of the current player 
 void MenuState::saveScore(int currentScore)
 {
 
@@ -74,7 +74,7 @@ void MenuState::saveScore(int currentScore)
         }
     }
 }
-
+// constructor that loads fonts, set UI text and positions element 
 
 MenuState::MenuState(unsigned int windowW, unsigned int windowH, const std::string& fontPath)
     : w(windowW), h(windowH), menuState(GameState::Start)
@@ -83,7 +83,7 @@ MenuState::MenuState(unsigned int windowW, unsigned int windowH, const std::stri
         std::cerr << "cant load font " << fontPath << "\n";
     }
 
-  
+  // title text setup
     titleText.setFont(font);
     titleText.setString("THIS IS THE END");
     titleText.setCharacterSize(100);
@@ -94,7 +94,7 @@ MenuState::MenuState(unsigned int windowW, unsigned int windowH, const std::stri
     titleText.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
     titleText.setPosition((float)w / 2.f, 150.f);
 
-
+    // Name prompt text
     namePrompt.setFont(font);
     namePrompt.setString("Enter your name:");
     namePrompt.setCharacterSize(40);
@@ -104,14 +104,14 @@ MenuState::MenuState(unsigned int windowW, unsigned int windowH, const std::stri
 
     namePrompt.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
     namePrompt.setPosition((float)w / 2.f, (float)h / 2.f - 50.f);
-
+    // player input field
     inputField.setFont(font);
     inputField.setCharacterSize(50);
     inputField.setFillColor(sf::Color::Yellow);
 
     loadScores();
 }
-
+// handles keyboard and text events for menue navigation 
 void MenuState::handleInput(Game& game, const sf::Event& event)
 {
     if (menuState == GameState::Quit)
@@ -126,12 +126,14 @@ void MenuState::handleInput(Game& game, const sf::Event& event)
     }
     else if (menuState == GameState::Start || menuState == GameState::GameOver)
     {
+        //Start game
         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
         {
             menuState = GameState::NameEntry;
 
             playerName.clear(); 
         }
+        //quit
         else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
         {
             menuState = GameState::Quit;
@@ -139,6 +141,7 @@ void MenuState::handleInput(Game& game, const sf::Event& event)
     }
     else if (menuState == GameState::NameEntry)
     {
+        //player tying name 
         if (event.type == sf::Event::TextEntered)
         {
             if (event.text.unicode >= 32 && event.text.unicode <= 126)
@@ -149,6 +152,7 @@ void MenuState::handleInput(Game& game, const sf::Event& event)
                 }
             }
         }
+        //backspace 
         else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::BackSpace)
         {
             if (!playerName.empty())
@@ -156,6 +160,7 @@ void MenuState::handleInput(Game& game, const sf::Event& event)
                 playerName.pop_back();
             }
         }
+        //enter to confirm and start game 
         else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
         {
             if (playerName.empty()) {
@@ -291,7 +296,7 @@ void MenuState::drawStart(sf::RenderWindow& w)
         currentY += 40.f;
     }
 }
-
+//draws the appropiate menu screen
 void MenuState::drawNameEntry(sf::RenderWindow& w)
 {
     w.draw(titleText);
