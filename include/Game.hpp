@@ -13,14 +13,17 @@ public:
 
   
     void pushState(std::unique_ptr<State> state);
+
     void popState();
     void changeState(std::unique_ptr<State> state);
 
     sf::RenderWindow& getWindow() { return window; }
+
     const sf::Sprite& getCrosshair() const { return crosshair; }
 
 private:
     sf::RenderWindow window;
+
     std::stack<std::unique_ptr<State>> states;
 
    

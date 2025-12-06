@@ -21,6 +21,8 @@ public:
 
 private:
     sf::Font font;
+
     sf::Text pauseText;
+
     sf::Text instructionsText;
 };

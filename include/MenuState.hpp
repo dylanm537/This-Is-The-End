@@ -26,7 +26,9 @@ public:
     MenuState(unsigned int windowW, unsigned int windowH, const std::string& fontPath);
 
     void handleInput(Game& game, const sf::Event& event) override;
+
     void update(Game& game, float dt) override;
+
     void render(sf::RenderWindow& window) override;
 
    
@@ -51,7 +53,9 @@ private:
     std::string playerName; 
 
     sf::Font font;
+
     unsigned int w, h;
+
     sf::Text titleText;
     sf::Text namePrompt;
     sf::Text inputField;
@@ -60,6 +64,7 @@ private:
     std::vector<ScoreEntry> topScores;
     int finalScore = 0;
     GameSystem* gameSystem = nullptr;
+
     const unsigned int maxNameLength = 12;
 
     static constexpr int MAX_SCORES_TO_KEEP = 5;

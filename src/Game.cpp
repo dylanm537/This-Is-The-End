@@ -21,6 +21,7 @@ Game::Game() :
     }
     // makes the origin of the image in the center of it
     crosshair.setTexture(crosshairTex);
+
     crosshair.setOrigin(crosshairTex.getSize().x / 2, crosshairTex.getSize().y / 2);
     crosshair.setScale(0.1f, 0.1f);
 
@@ -82,6 +83,7 @@ void Game::run()
             // draws crosshair
             sf::Vector2i mp = sf::Mouse::getPosition(window);
             crosshair.setPosition((float)mp.x, (float)mp.y);
+
             window.draw(crosshair);
 
             window.display();

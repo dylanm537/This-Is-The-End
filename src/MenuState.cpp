@@ -23,6 +23,7 @@ namespace
 void MenuState::loadScores()
 {
     topScores.clear();
+
     ifstream file(SCORES_FILE);
 
     if (file.is_open())
@@ -33,6 +34,7 @@ void MenuState::loadScores()
         {
             topScores.push_back(entry);
         }
+
         file.close();
 
         std::sort(topScores.begin(), topScores.end(), compareScores);
@@ -46,10 +48,12 @@ void MenuState::saveScore(int currentScore)
     {
  
         ScoreEntry newEntry;
+
         newEntry.name = playerName;
         newEntry.score = currentScore;
 
         topScores.push_back(newEntry);
+
         std::sort(topScores.begin(), topScores.end(), compareScores);
 
         if (topScores.size() > MAX_HIGH_SCORES)
@@ -59,6 +63,7 @@ void MenuState::saveScore(int currentScore)
 
 
         ofstream file(SCORES_FILE);
+
         if (file.is_open())
         {
             for (const auto& entry : topScores)
@@ -75,16 +80,17 @@ MenuState::MenuState(unsigned int windowW, unsigned int windowH, const std::stri
     : w(windowW), h(windowH), menuState(GameState::Start)
 {
     if (!font.loadFromFile(fontPath)) {
-        std::cerr << "ERROR: Failed to load font from " << fontPath << "\n";
+        std::cerr << "cant load font " << fontPath << "\n";
     }
 
   
     titleText.setFont(font);
-    titleText.setString("THE LAST STAND");
+    titleText.setString("THIS IS THE END");
     titleText.setCharacterSize(100);
     titleText.setFillColor(sf::Color::Red);
 
     sf::FloatRect bounds = titleText.getLocalBounds();
+
     titleText.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
     titleText.setPosition((float)w / 2.f, 150.f);
 
@@ -95,6 +101,7 @@ MenuState::MenuState(unsigned int windowW, unsigned int windowH, const std::stri
     namePrompt.setFillColor(sf::Color::White);
 
     bounds = namePrompt.getLocalBounds();
+
     namePrompt.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
     namePrompt.setPosition((float)w / 2.f, (float)h / 2.f - 50.f);
 
@@ -122,6 +129,7 @@ void MenuState::handleInput(Game& game, const sf::Event& event)
         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
         {
             menuState = GameState::NameEntry;
+
             playerName.clear(); 
         }
         else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
@@ -154,8 +162,8 @@ void MenuState::handleInput(Game& game, const sf::Event& event)
                 playerName = "SURVIVOR";
             }
 
-
             menuState = GameState::Playing;
+
             game.pushState(std::make_unique<PlayingState>(*this));
         }
 
@@ -172,14 +180,18 @@ void MenuState::update(Game& game, float dt)
     else if (menuState == GameState::GameOver)
     {
         saveScore(finalScore);
+
         loadScores(); 
+
         menuState = GameState::Start;
     }
     else if (menuState == GameState::NameEntry)
     {
 
         static float timeElapsed = 0.f;
+
         timeElapsed += dt;
+
         bool cursorVisible = (static_cast<int>(timeElapsed * 2)) % 2 == 0;
 
         std::string textWithCursor = playerName;
@@ -191,7 +203,9 @@ void MenuState::update(Game& game, float dt)
 
  
         sf::FloatRect bounds = inputField.getLocalBounds();
+
         inputField.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
+
         inputField.setPosition((float)w / 2.f, (float)h / 2.f + 10.f);
     }
 }
@@ -215,28 +229,40 @@ void MenuState::drawStart(sf::RenderWindow& w)
     w.draw(titleText);
 
     sf::Text instructions("Press ENTER to start / ESC to quit", font, 40);
+
     instructions.setFillColor(sf::Color::White);
 
     sf::FloatRect bounds = instructions.getLocalBounds();
+
     instructions.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
+
     instructions.setPosition((float)this->w / 2.f, (float)this->h / 2.f + 100.f);
+
     w.draw(instructions);
 
     if (finalScore > 0)
     {
         sf::Text lastScoreText("Last Score: " + std::to_string(finalScore) + " (" + playerName + ")", font, 36);
+
         lastScoreText.setFillColor(sf::Color::Cyan);
+
         bounds = lastScoreText.getLocalBounds();
+
         lastScoreText.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
         lastScoreText.setPosition((float)this->w / 2.f, (float)this->h / 2.f + 180.f);
+
         w.draw(lastScoreText);
     }
 
     sf::Text highscoreTitle("HIGH SCORES (TOP " + std::to_string(MAX_HIGH_SCORES) + ")", font, 30);
+
     highscoreTitle.setFillColor(sf::Color(255, 200, 50));
+
     bounds = highscoreTitle.getLocalBounds();
     highscoreTitle.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
+
     highscoreTitle.setPosition((float)this->w / 2.f, 300.f);
+
     w.draw(highscoreTitle);
 
     float currentY = 350.f;
@@ -256,8 +282,10 @@ void MenuState::drawStart(sf::RenderWindow& w)
         }
 
         bounds = scoreText.getLocalBounds();
+
         scoreText.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
         scoreText.setPosition((float)this->w / 2.f, currentY);
+
         w.draw(scoreText);
 
         currentY += 40.f;
@@ -273,9 +301,13 @@ void MenuState::drawNameEntry(sf::RenderWindow& w)
     w.draw(inputField);
 
     sf::Text instructions("Press ENTER to continue", font, 30);
+
     instructions.setFillColor(sf::Color(150, 150, 150));
+
     sf::FloatRect bounds = instructions.getLocalBounds();
+
     instructions.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
     instructions.setPosition((float)this->w / 2.f, (float)this->h / 2.f + 100.f);
+
     w.draw(instructions);
 }

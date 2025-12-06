@@ -19,30 +19,38 @@ namespace
 {
    
     static sf::Texture g_playerTex;
+
     static sf::Texture g_zombieTex;
 
     
     static sf::Texture g_mapTex;
+
     static sf::Sprite g_mapSprite;
 
     
     static sf::Texture g_truckTex;
+
     static std::vector<sf::Sprite> g_truckSprites;
 
     std::unique_ptr<Player> g_player;
     
     std::vector<sf::RectangleShape> g_walls;
+
     std::vector<Zombie> g_zombies;
 
     float g_zombieSpawnTimer = 0.f;
+
     float g_zombieSpawnInterval = 5.f;
 
     float g_difficultyTimer = 0.f;
+
     int g_zombiesPerWave = 3;
 
     const float g_difficultyIncreaseInterval = 50.f;
 
+
     float g_damageCooldown = 0.f;
+
     const float g_damageInterval = 0.4f;
 
     int g_score = 0;
@@ -54,6 +62,7 @@ namespace
 static float randFloat(float a, float b) {
     
     static std::mt19937 rng((unsigned)std::random_device{}());
+
     std::uniform_real_distribution<float> d(a, b);
     return d(rng);
 }
@@ -63,8 +72,10 @@ static sf::Texture createSolidTexture(unsigned size, sf::Color c)
 {
     sf::Image img;
     img.create(size, size, c);
+
     sf::Texture t;
     t.loadFromImage(img);
+
     return t;
 }
 
@@ -85,24 +96,28 @@ static void spawnZombies(int count)
         {
             
             x = randFloat(0.f, (float)param::game_width);
+
             y = -offset;
         }
         else if (side == 2) 
         {
             
             x = randFloat(0.f, (float)param::game_width);
+
             y = (float)param::game_height + offset;
         }
         else if (side == 3) 
         {
             
             x = -offset;
+
             y = randFloat(0.f, (float)param::game_height);
         }
         else 
         {
             
             x = (float)param::game_width + offset;
+
             y = randFloat(0.f, (float)param::game_height);
         }
 
@@ -118,13 +133,16 @@ static void createTruckObstacle(sf::Vector2f position)
     const float desiredWidth = 120.f;
 
     const float collisionWidth = 28.f;
+
     const float collisionHeight = 38.f;
 
   
     sf::Sprite truckSprite(g_truckTex);
+
     sf::FloatRect bounds = truckSprite.getLocalBounds();
 
     float scale = desiredWidth / bounds.width;
+
     truckSprite.setScale(scale, scale);
     truckSprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
     truckSprite.setPosition(position);
@@ -148,32 +166,35 @@ void GameSystem::init()
 {
    
     if (!g_playerTex.loadFromFile("assets/player.png")) {
-        std::cerr << "FATAL: FAILED TO LOAD assets/player.png\n";
+        std::cerr << "cant load assets/player.png\n";
     }
 
     if (!g_zombieTex.loadFromFile("assets/zombie.png")) {
-        std::cerr << "FATAL: FAILED TO LOAD assets/zombie.png\n";
+        std::cerr << "cant load assets/zombie.png\n";
     }
 
     
     if (!g_mapTex.loadFromFile("assets/map.png")) {
-        std::cerr << "WARNING: FAILED TO LOAD assets/map.png. Using default background.\n";
+        std::cerr << "cant load assets/map.png. will use default background.\n";
     }
     else {
         g_mapSprite.setTexture(g_mapTex);
 
         sf::Vector2u mapSize = g_mapTex.getSize();
+
         float scaleX = (float)param::game_width / mapSize.x;
+
         float scaleY = (float)param::game_height / mapSize.y;
 
         g_mapSprite.setScale(scaleX, scaleY);
     }
 
     g_walls.clear(); 
+
     g_truckSprites.clear(); 
 
     if (!g_truckTex.loadFromFile("assets/truck.png")) {
-        std::cerr << "WARNING: FAILED TO LOAD assets/truck.png. No truck obstacles added.\n";
+        std::cerr << "cant load assets/truck.png. No truck added.\n";
     }
     else {
         
@@ -181,14 +202,19 @@ void GameSystem::init()
 
        
         const float padding = 80.f;
+
         const float max_x = (float)param::game_width - padding;
+
         const float min_x = padding;
+
         const float max_y = (float)param::game_height - padding;
+
         const float min_y = padding;
 
         for (int i = 0; i < numTrucks; ++i)
         {
             float randomX = randFloat(min_x, max_x);
+
             float randomY = randFloat(min_y, max_y);
 
             createTruckObstacle({ randomX, randomY });
@@ -201,9 +227,13 @@ void GameSystem::init()
 
     
     g_zombies.clear();
+
     g_zombieSpawnTimer = 0.f;
+
     g_difficultyTimer = 0.f;
+
     g_zombiesPerWave = 3;
+
     g_damageCooldown = 0.f;
 
     g_score = 0;
@@ -240,12 +270,14 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
     g_damageCooldown -= dt;
 
     sf::Vector2f prevPos = g_player->getCenter();
+
     g_player->handleInput(window, dt);
     g_player->update(dt);
     g_player->updateBullets(dt);
 
     
     sf::FloatRect pBounds = g_player->getBounds();
+
     float halfWidth = pBounds.width / 2.f;
     float halfHeight = pBounds.height / 2.f;
 
@@ -280,6 +312,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 
   
     sf::Vector2f p = g_player->getCenter();
+
     for (auto& z : g_zombies)
         z.update(p, dt, g_walls); 
 
@@ -291,7 +324,9 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
             if (!z.isDead() && pBounds.intersects(z.getBounds()))
             {
                 g_player->takeDamage(1);
+
                 g_damageCooldown = g_damageInterval;
+
                 break;
             }
         }
@@ -304,12 +339,15 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 
         
         bool hitWall = false;
+
         for (auto& w : g_walls)
         {
             if (b.getBounds().intersects(w.getGlobalBounds()))
             {
                 b.kill();
+
                 hitWall = true;
+
                 break;
             }
         }
@@ -320,6 +358,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
             if (!z.isDead() && b.getBounds().intersects(z.getBounds()))
             {
                 z.damage(1);
+
                 b.kill();
 
                 if (z.isDead())
@@ -342,6 +381,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
     if (g_difficultyTimer >= g_difficultyIncreaseInterval)
     {
         g_difficultyTimer = 0.f;
+
         g_zombiesPerWave += 3;
     }
 
@@ -350,6 +390,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
     if (g_zombieSpawnTimer >= g_zombieSpawnInterval)
     {
         g_zombieSpawnTimer = 0.f;
+
         spawnZombies(g_zombiesPerWave);
     }
 
@@ -394,12 +435,17 @@ void GameSystem::render(sf::RenderWindow& window)
 
 
     sf::Text hp("HP: " + std::to_string(g_player->getHP()), hudFont, 18);
+
     hp.setFillColor(sf::Color::White);
     hp.setPosition(10, 10);
+
     window.draw(hp);
 
+
     sf::Text sc("Score: " + std::to_string(g_score), hudFont, 18);
+
     sc.setFillColor(sf::Color::Cyan);
     sc.setPosition(param::game_width - 120, 10);
+
     window.draw(sc);
 }
