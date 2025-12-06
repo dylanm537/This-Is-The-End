@@ -1,3 +1,4 @@
+// Player.hpp
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
@@ -29,6 +30,9 @@ public:
     sf::FloatRect getBounds() const { return sprite.getGlobalBounds(); }
     sf::Vector2f getCenter() const { return sprite.getPosition(); }
 
+    // Required for boundary clamping in GameSystem
+    void setPosition(const sf::Vector2f& pos) { sprite.setPosition(pos); }
+
     void takeDamage(int amount) { hp -= amount; if (hp < 0) hp = 0; }
     int getHP() const { return hp; }
 
@@ -41,9 +45,8 @@ private:
     float speed;
     float bulletCooldown;
     float timeSinceLastShot;
-
+    int hp;
     std::vector<Bullet> bullets;
 
-    int hp;
     static constexpr int MAX_HP = 10;
 };

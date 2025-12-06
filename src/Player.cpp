@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <cmath>
+#include <algorithm> // Ensure this is present for std::remove_if to work
 
 namespace
 {
@@ -23,7 +24,14 @@ Player::Player(float x, float y, sf::Texture& texture)
     sprite.setTexture(texture);
     sf::FloatRect bounds = sprite.getLocalBounds();
 
+    // Set origin to the center of the sprite image
     sprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
+
+    // Scale the sprite to a reasonable size (e.g., 30 pixels high)
+    const float desiredHeight = 30.f;
+    float scale = desiredHeight / bounds.height;
+    sprite.setScale(scale, scale);
+
     sprite.setPosition(x, y);
 }
 
@@ -36,18 +44,21 @@ void Player::handleInput(const sf::RenderWindow& window, float dt)
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) dir.x -= 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) dir.x += 1.f;
 
+    // Normalize direction and move
     dir = normalize(dir);
     sprite.move(dir * speed * dt);
 
+    // Calculate rotation angle
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePos);
 
-    sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-    sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
-    sf::Vector2f toMouse = mouseWorld - sprite.getPosition();
+    sf::Vector2f lookDir = mouseWorld - sprite.getPosition();
+    float angle = std::atan2(lookDir.y, lookDir.x) * 180.f / 3.14159265f;
 
-    float angle = std::atan2(toMouse.y, toMouse.x) * 180.f / 3.14159265f;
-    sprite.setRotation(angle + 90.f);
+    // ?? FIX 1: Removed the + 90.f offset because the sprite is oriented RIGHT (0 degrees)
+    sprite.setRotation(angle); // Now the sprite faces the mouse correctly
 
- 
+    // Shooting
     timeSinceLastShot += dt;
     if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
     {
@@ -81,10 +92,16 @@ void Player::shootTowards(const sf::Vector2f& target)
     b.shape = sf::CircleShape(4.f);
     b.shape.setOrigin(4.f, 4.f);
     b.shape.setFillColor(sf::Color::Yellow);
-    b.shape.setPosition(sprite.getPosition());
 
     const float bulletSpeed = 460.f;
     sf::Vector2f dir = normalize(target - sprite.getPosition());
+
+    // ?? FIX 2: Offset the bullet spawn point forward along the direction vector
+    const float spawnOffset = 20.f; // Adjust this value to fine-tune the starting position
+    sf::Vector2f spawnPos = sprite.getPosition() + dir * spawnOffset;
+
+    b.shape.setPosition(spawnPos); // Spawn the bullet in front of the center
+
     b.velocity = dir * bulletSpeed;
 
     bullets.push_back(b);
@@ -99,18 +116,13 @@ void Player::updateBullets(float dt)
             b.shape.move(b.velocity * dt);
     }
 
-    // Remove dead or out ofbounds bullets
-    auto it = bullets.begin();
-    while (it != bullets.end())
-    {
-        sf::Vector2f p = it->shape.getPosition();
-        bool outOfBounds =
-            (p.x < -100.f || p.x > 1000.f ||
-                p.y < -100.f || p.y > 800.f);
-
-        if (!it->alive || outOfBounds)
-            it = bullets.erase(it);
-        else
-            ++it;
-    }
+    // Cull expired bullets (simple screen boundary check)
+    bullets.erase(
+        std::remove_if(bullets.begin(), bullets.end(),
+            [](const Bullet& b) {
+                // Assuming game dimensions are 800x600 for culling logic
+                return !b.alive || b.shape.getPosition().x < 0 || b.shape.getPosition().x > 800 ||
+                    b.shape.getPosition().y < 0 || b.shape.getPosition().y > 600;
+            }),
+        bullets.end());
 }

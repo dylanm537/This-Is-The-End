@@ -6,11 +6,11 @@ class Zombie {
 public:
     Zombie(float x, float y, sf::Texture& texture);
 
-   
+    // Wall-aware update (Original logic: simple collision/bounce)
     void update(const sf::Vector2f& playerPos, float dt,
         const std::vector<sf::RectangleShape>& walls);
 
-    
+    // Basic update (for compatibility, not used by GameSystem but must be defined)
     void update(const sf::Vector2f& playerPos, float dt);
 
     void draw(sf::RenderWindow& window) const;

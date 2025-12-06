@@ -4,7 +4,7 @@
 #include "State.hpp"
 #include "game_system.hpp"
 
-
+// Keep GameState enum to manage internal menu flow
 enum class GameState {
     Start,
     NameEntry,
@@ -26,10 +26,16 @@ public:
     GameState menuState;
     std::string playerName;
 
- 
+    // Allows the PlayingState to link its GameSystem instance to get the final score.
     void linkGameSystem(GameSystem* gs) { gameSystem = gs; }
 
+    // --- NEW: Method to store the score from the finished game ---
+    void setFinalScore(int score) { finalScore = score; }
+
 private:
+    void loadHighscore();
+    void saveHighscore(int currentScore);
+
     void drawStart(sf::RenderWindow& w);
     void drawNameEntry(sf::RenderWindow& w);
     void drawGameOver(sf::RenderWindow& w, int score);
@@ -41,4 +47,14 @@ private:
     sf::Text nameText;
 
     GameSystem* gameSystem = nullptr;
+
+    // --- NEW: Stored score from the last game ---
+    int finalScore = 0;
+
+    // High Score Data
+    std::string highscoreName;
+    int highscore = 0;
+
+    // Blink Timer
+    float cursorBlinkTimer = 0.f;
 };
