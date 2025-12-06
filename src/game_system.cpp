@@ -118,8 +118,8 @@ static void createTruckObstacle(sf::Vector2f position)
     const float desiredWidth = 120.f;
 
     // COLLISION ADJUSTMENTS (Current tuned values)
-    const float collisionWidth = 80.f;
-    const float collisionHeight = 50.f;
+    const float collisionWidth = 28.f;
+    const float collisionHeight = 38.f;
 
     // --- 1. Create the VISUAL Sprite ---
     sf::Sprite truckSprite(g_truckTex);
@@ -180,7 +180,7 @@ void GameSystem::init()
     }
     else {
         // We will spawn 3 to 5 trucks randomly
-        int numTrucks = (std::rand() % 3) + 3; // Generates a random number 3, 4, or 5
+        int numTrucks = (std::rand() % 6) + 5; // Generates a random number 3, 4, or 5
 
         // Define boundaries to keep trucks away from the edges
         const float padding = 80.f;

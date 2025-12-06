@@ -1,8 +1,9 @@
 #pragma once
 #include "State.hpp"
 #include "game_system.hpp"
+#include <SFML/Audio.hpp> // <-- Add this include
 
-class MenuState; 
+class MenuState;
 
 class PlayingState : public State
 {
@@ -16,4 +17,7 @@ public:
 private:
     GameSystem gameSystem;
     MenuState& menuStateRef;
+
+    // NEW: Background Music Object
+    sf::Music backgroundMusic;
 };

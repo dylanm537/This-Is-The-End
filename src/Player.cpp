@@ -1,8 +1,9 @@
 #include "Player.hpp"
+#include "game_parameters.hpp" // <-- NEW: Include the parameters header
 
 #include <SFML/Graphics.hpp>
 #include <cmath>
-#include <algorithm> // Ensure this is present for std::remove_if to work
+#include <algorithm> 
 
 namespace
 {
@@ -55,8 +56,8 @@ void Player::handleInput(const sf::RenderWindow& window, float dt)
     sf::Vector2f lookDir = mouseWorld - sprite.getPosition();
     float angle = std::atan2(lookDir.y, lookDir.x) * 180.f / 3.14159265f;
 
-    // ?? FIX 1: Removed the + 90.f offset because the sprite is oriented RIGHT (0 degrees)
-    sprite.setRotation(angle); // Now the sprite faces the mouse correctly
+    // Set rotation (using the angle directly as discovered)
+    sprite.setRotation(angle);
 
     // Shooting
     timeSinceLastShot += dt;
@@ -96,11 +97,11 @@ void Player::shootTowards(const sf::Vector2f& target)
     const float bulletSpeed = 460.f;
     sf::Vector2f dir = normalize(target - sprite.getPosition());
 
-    // ?? FIX 2: Offset the bullet spawn point forward along the direction vector
-    const float spawnOffset = 20.f; // Adjust this value to fine-tune the starting position
+    // Offset the bullet spawn point forward along the direction vector
+    const float spawnOffset = 20.f;
     sf::Vector2f spawnPos = sprite.getPosition() + dir * spawnOffset;
 
-    b.shape.setPosition(spawnPos); // Spawn the bullet in front of the center
+    b.shape.setPosition(spawnPos);
 
     b.velocity = dir * bulletSpeed;
 
@@ -116,13 +117,16 @@ void Player::updateBullets(float dt)
             b.shape.move(b.velocity * dt);
     }
 
-    // Cull expired bullets (simple screen boundary check)
+    // Cull expired bullets 
     bullets.erase(
         std::remove_if(bullets.begin(), bullets.end(),
             [](const Bullet& b) {
-                // Assuming game dimensions are 800x600 for culling logic
-                return !b.alive || b.shape.getPosition().x < 0 || b.shape.getPosition().x > 800 ||
-                    b.shape.getPosition().y < 0 || b.shape.getPosition().y > 600;
+                // --- FIX: Use Parameters::game_width/height for culling boundaries ---
+                return !b.alive ||
+                    b.shape.getPosition().x < 0 ||
+                    b.shape.getPosition().x > Parameters::game_width ||
+                    b.shape.getPosition().y < 0 ||
+                    b.shape.getPosition().y > Parameters::game_height;
             }),
         bullets.end());
 }

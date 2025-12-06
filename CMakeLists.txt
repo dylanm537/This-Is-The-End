@@ -22,11 +22,12 @@ add_executable(thisistheend
     src/game_system.cpp
     src/Player.cpp
     src/Zombie.cpp
-)
+ "src/PauseState.cpp")
 
 target_include_directories(thisistheend PRIVATE include ${SFML_INCS})
 
-target_link_libraries(thisistheend sfml-graphics sfml-window sfml-system)
+# FIX 1: Add sfml-audio to link the music module
+target_link_libraries(thisistheend sfml-graphics sfml-window sfml-system sfml-audio) 
 
 file(COPY assets DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
@@ -34,6 +35,14 @@ add_custom_command(TARGET thisistheend POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets
     $<TARGET_FILE_DIR:thisistheend>/assets)
+
+# FIX 2: NEW COMMAND TO COPY OPENAL32.DLL
+add_custom_command(TARGET thisistheend POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_SOURCE_DIR}/lib/SFML/extlibs/bin/x64/OpenAL32.dll
+    $<TARGET_FILE_DIR:thisistheend>
+    COMMENT "Copying OpenAL32.dll required for SFML Audio"
+)
 
 
 if(MSVC)
