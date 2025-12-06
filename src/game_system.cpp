@@ -7,30 +7,30 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm> 
-#include <random> // Required for generating random numbers
+#include <random> 
 
 using param = Parameters;
 
-// Shared spritesheet (Kept but not used for player/zombie)
+
 sf::Texture GameSystem::spritesheet;
 
-// Internal game data
+
 namespace
 {
-    // Persistent Textures
+   
     static sf::Texture g_playerTex;
     static sf::Texture g_zombieTex;
 
-    // Map Background
+    
     static sf::Texture g_mapTex;
     static sf::Sprite g_mapSprite;
 
-    // Truck Obstacle
+    
     static sf::Texture g_truckTex;
     static std::vector<sf::Sprite> g_truckSprites;
 
     std::unique_ptr<Player> g_player;
-    // g_walls holds the collision boxes for the truck obstacles
+    
     std::vector<sf::RectangleShape> g_walls;
     std::vector<Zombie> g_zombies;
 
@@ -50,15 +50,15 @@ namespace
     bool g_isGameOver = false;
 }
 
-// NEW HELPER: Random float generator
+
 static float randFloat(float a, float b) {
-    // This is a robust way to generate a uniform random float
+    
     static std::mt19937 rng((unsigned)std::random_device{}());
     std::uniform_real_distribution<float> d(a, b);
     return d(rng);
 }
 
-// Helper to make a texture (original code, kept)
+
 static sf::Texture createSolidTexture(unsigned size, sf::Color c)
 {
     sf::Image img;
@@ -68,40 +68,40 @@ static sf::Texture createSolidTexture(unsigned size, sf::Color c)
     return t;
 }
 
-// MODIFIED: Zombies now spawn from a randomly chosen side 
+ 
 static void spawnZombies(int count)
 {
-    // Define how far off-screen the zombie should start
+    
     const float offset = 40.f;
 
     for (int i = 0; i < count; i++)
     {
         float x, y;
 
-        // Randomly choose a side (1=Top, 2=Bottom, 3=Left, 4=Right)
+        
         int side = (std::rand() % 4) + 1;
 
-        if (side == 1) // Top side
+        if (side == 1)
         {
-            // Random X across the map width, fixed Y just above the screen
+            
             x = randFloat(0.f, (float)param::game_width);
             y = -offset;
         }
-        else if (side == 2) // Bottom side
+        else if (side == 2) 
         {
-            // Random X across the map width, fixed Y just below the screen
+            
             x = randFloat(0.f, (float)param::game_width);
             y = (float)param::game_height + offset;
         }
-        else if (side == 3) // Left side
+        else if (side == 3) 
         {
-            // Fixed X just left of the screen, random Y across the map height
+            
             x = -offset;
             y = randFloat(0.f, (float)param::game_height);
         }
-        else // side == 4 (Right side)
+        else 
         {
-            // Fixed X just right of the screen, random Y across the map height
+            
             x = (float)param::game_width + offset;
             y = randFloat(0.f, (float)param::game_height);
         }
@@ -111,17 +111,16 @@ static void spawnZombies(int count)
 }
 
 
-// NEW HELPER: Creates a single truck sprite and its collision box
+
 static void createTruckObstacle(sf::Vector2f position)
 {
-    // VISUAL SPRITE SCALING & POSITION 
+    
     const float desiredWidth = 120.f;
 
-    // COLLISION ADJUSTMENTS (Current tuned values)
     const float collisionWidth = 28.f;
     const float collisionHeight = 38.f;
 
-    // --- 1. Create the VISUAL Sprite ---
+  
     sf::Sprite truckSprite(g_truckTex);
     sf::FloatRect bounds = truckSprite.getLocalBounds();
 
@@ -132,14 +131,13 @@ static void createTruckObstacle(sf::Vector2f position)
 
     g_truckSprites.push_back(truckSprite);
 
-    // --- 2. Create the INVISIBLE Collision Box ---
     sf::RectangleShape truckCollision({ collisionWidth, collisionHeight });
 
-    // Set the origin/position to match the sprite's center
+    
     truckCollision.setOrigin(collisionWidth / 2.f, collisionHeight / 2.f);
     truckCollision.setPosition(position);
 
-    // The collision shape is invisible
+    
     truckCollision.setFillColor(sf::Color::Transparent);
 
     g_walls.push_back(truckCollision);
@@ -148,7 +146,7 @@ static void createTruckObstacle(sf::Vector2f position)
 
 void GameSystem::init()
 {
-    // 1. Load Player and Zombie Textures
+   
     if (!g_playerTex.loadFromFile("assets/player.png")) {
         std::cerr << "FATAL: FAILED TO LOAD assets/player.png\n";
     }
@@ -157,7 +155,7 @@ void GameSystem::init()
         std::cerr << "FATAL: FAILED TO LOAD assets/zombie.png\n";
     }
 
-    // 2. Setup Map Background (with scaling fix)
+    
     if (!g_mapTex.loadFromFile("assets/map.png")) {
         std::cerr << "WARNING: FAILED TO LOAD assets/map.png. Using default background.\n";
     }
@@ -171,18 +169,17 @@ void GameSystem::init()
         g_mapSprite.setScale(scaleX, scaleY);
     }
 
-    // 3. Setup Truck Obstacles (Randomized)
-    g_walls.clear(); // Clear collision boxes
-    g_truckSprites.clear(); // Clear visual sprites
+    g_walls.clear(); 
+    g_truckSprites.clear(); 
 
     if (!g_truckTex.loadFromFile("assets/truck.png")) {
         std::cerr << "WARNING: FAILED TO LOAD assets/truck.png. No truck obstacles added.\n";
     }
     else {
-        // We will spawn 3 to 5 trucks randomly
-        int numTrucks = (std::rand() % 6) + 5; // Generates a random number 3, 4, or 5
+        
+        int numTrucks = (std::rand() % 6) + 5; 
 
-        // Define boundaries to keep trucks away from the edges
+       
         const float padding = 80.f;
         const float max_x = (float)param::game_width - padding;
         const float min_x = padding;
@@ -197,12 +194,12 @@ void GameSystem::init()
             createTruckObstacle({ randomX, randomY });
         }
     }
-    // ------------------------------------------
+   
 
-    // Initialize player
+    
     g_player = std::make_unique<Player>(100.f, 100.f, g_playerTex);
 
-    // Reset game state variables
+    
     g_zombies.clear();
     g_zombieSpawnTimer = 0.f;
     g_difficultyTimer = 0.f;
@@ -212,7 +209,7 @@ void GameSystem::init()
     g_score = 0;
     g_isGameOver = false;
 
-    // Initial zombie spawn
+   
     spawnZombies(g_zombiesPerWave);
 }
 
@@ -247,47 +244,46 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
     g_player->update(dt);
     g_player->updateBullets(dt);
 
-    // Player vs. Map Boundary (Clamping)
+    
     sf::FloatRect pBounds = g_player->getBounds();
     float halfWidth = pBounds.width / 2.f;
     float halfHeight = pBounds.height / 2.f;
 
     sf::Vector2f pos = g_player->getCenter();
 
-    // Clamp X position
+   
     if (pos.x < halfWidth)
         pos.x = halfWidth;
     else if (pos.x > param::game_width - halfWidth)
         pos.x = param::game_width - halfWidth;
 
-    // Clamp Y position
+    
     if (pos.y < halfHeight)
         pos.y = halfHeight;
     else if (pos.y > param::game_height - halfHeight)
         pos.y = param::game_height - halfHeight;
 
-    // Set the clamped position
+    
     g_player->setPosition(pos);
 
-    // Player vs. walls (includes the transparent truck collision box)
-    // Recalculate pBounds since position might have been clamped
+    
     pBounds = g_player->getBounds();
     for (auto& w : g_walls)
     {
         if (pBounds.intersects(w.getGlobalBounds()))
         {
-            // If collision occurs, move player back by the difference
+            
             g_player->moveBy(prevPos - g_player->getCenter());
             break;
         }
     }
 
-    // Update zombies
+  
     sf::Vector2f p = g_player->getCenter();
     for (auto& z : g_zombies)
-        z.update(p, dt, g_walls); // This calls the reverted wall-aware update
+        z.update(p, dt, g_walls); 
 
-    // Damage
+    
     if (g_damageCooldown <= 0.f)
     {
         for (auto& z : g_zombies)
@@ -301,12 +297,12 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         }
     }
 
-    // Bullet hits
+    
     for (auto& b : g_player->getBullets())
     {
         if (!b.isAlive()) continue;
 
-        // Check for collision with walls (trucks) first
+        
         bool hitWall = false;
         for (auto& w : g_walls)
         {
@@ -317,7 +313,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
                 break;
             }
         }
-        if (hitWall) continue; // Bullet hit a wall, skip zombie check and move to next bullet
+        if (hitWall) continue; 
 
         for (auto& z : g_zombies)
         {
@@ -334,14 +330,14 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         }
     }
 
-    // Remove dead zombies
+    
     g_zombies.erase(
         std::remove_if(g_zombies.begin(), g_zombies.end(),
             [](const Zombie& z) { return z.isDead(); }),
         g_zombies.end()
     );
 
-    // Difficulty increase
+    
     g_difficultyTimer += dt;
     if (g_difficultyTimer >= g_difficultyIncreaseInterval)
     {
@@ -349,7 +345,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         g_zombiesPerWave += 3;
     }
 
-    // Spawning waves
+    
     g_zombieSpawnTimer += dt;
     if (g_zombieSpawnTimer >= g_zombieSpawnInterval)
     {
@@ -357,7 +353,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         spawnZombies(g_zombiesPerWave);
     }
 
-    // Player died ? GameOver
+    
     if (g_player->getHP() <= 0)
     {
         g_isGameOver = true;
@@ -366,35 +362,34 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 
 void GameSystem::render(sf::RenderWindow& window)
 {
-    // 1. Draw Map Background
+    
     if (g_mapTex.getSize().x > 0) {
         window.draw(g_mapSprite);
     }
     else {
-        // Fallback: Clear with a color if map.png failed to load
+        
         window.clear(sf::Color(25, 25, 40));
     }
 
-    // 2. Draw Obstacles (Transparent collision boxes + Opaque Truck Sprites)
-    // Draw the transparent collision boxes first for Z-order consistency
+    
     for (auto& w : g_walls)
         window.draw(w);
 
-    // Draw all the visual truck sprites
+    
     for (const auto& truckSprite : g_truckSprites) {
         window.draw(truckSprite);
     }
 
-    // 3. Draw Game Objects
+    
     for (auto& z : g_zombies)
         z.draw(window);
 
     g_player->draw(window);
 
-    // 4. Draw HUD
+    
     sf::Font hudFont;
     if (!hudFont.loadFromFile("assets/arial.ttf")) {
-        // Handle font loading error here if needed
+        
     }
 
 

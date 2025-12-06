@@ -1,4 +1,3 @@
-// Player.hpp
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
@@ -30,7 +29,6 @@ public:
     sf::FloatRect getBounds() const { return sprite.getGlobalBounds(); }
     sf::Vector2f getCenter() const { return sprite.getPosition(); }
 
-    // Required for boundary clamping in GameSystem
     void setPosition(const sf::Vector2f& pos) { sprite.setPosition(pos); }
 
     void takeDamage(int amount) { hp -= amount; if (hp < 0) hp = 0; }

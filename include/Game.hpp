@@ -11,7 +11,7 @@ public:
     Game();
     void run();
 
-    // State management functions
+  
     void pushState(std::unique_ptr<State> state);
     void popState();
     void changeState(std::unique_ptr<State> state);
@@ -23,7 +23,7 @@ private:
     sf::RenderWindow window;
     std::stack<std::unique_ptr<State>> states;
 
-    // Crosshair
+   
     sf::Texture crosshairTex;
     sf::Sprite crosshair;
 };

@@ -11,7 +11,7 @@ Game::Game() :
     window.setFramerateLimit(60);
     window.setMouseCursorVisible(false);
 
-    // Initialize Crosshair
+   
     if (!crosshairTex.loadFromFile("assets/crosshair.png")) {
         std::cout << "FAILED TO LOAD CROSSHAIR\n";
     }
@@ -19,7 +19,7 @@ Game::Game() :
     crosshair.setOrigin(crosshairTex.getSize().x / 2, crosshairTex.getSize().y / 2);
     crosshair.setScale(0.1f, 0.1f);
 
-    // Start with the MenuState
+    
     pushState(std::make_unique<MenuState>(Parameters::game_width, Parameters::game_height, "assets/arial.ttf"));
 }
 
@@ -71,14 +71,14 @@ void Game::run()
             window.clear(sf::Color::Black);
             states.top()->render(window);
 
-            // Draw crosshair on top of everything
+
             sf::Vector2i mp = sf::Mouse::getPosition(window);
             crosshair.setPosition((float)mp.x, (float)mp.y);
             window.draw(crosshair);
 
             window.display();
         }
-        else // No more states, quit
+        else 
         {
             window.close();
         }
