@@ -10,14 +10,15 @@
 #include <random> 
 
 using param = Parameters;
-
+// Shared textures 
 
 sf::Texture GameSystem::spritesheet;
-
+//anonymous namespace: internal persistent gameplay data
+//these behave like private static members but remain C++ safe 
 
 namespace
 {
-   
+   // textures
     static sf::Texture g_playerTex;
 
     static sf::Texture g_zombieTex;
@@ -26,18 +27,18 @@ namespace
     static sf::Texture g_mapTex;
 
     static sf::Sprite g_mapSprite;
-
+    // truck obstacle
     
     static sf::Texture g_truckTex;
 
     static std::vector<sf::Sprite> g_truckSprites;
-
+    // player
     std::unique_ptr<Player> g_player;
-    
+    // world objects
     std::vector<sf::RectangleShape> g_walls;
 
     std::vector<Zombie> g_zombies;
-
+    // spawn and difficulty
     float g_zombieSpawnTimer = 0.f;
 
     float g_zombieSpawnInterval = 5.f;
@@ -48,17 +49,17 @@ namespace
 
     const float g_difficultyIncreaseInterval = 50.f;
 
-
+    // player damage cooldown (prevents instant death)
     float g_damageCooldown = 0.f;
 
     const float g_damageInterval = 0.4f;
-
+    // score and game over 
     int g_score = 0;
 
     bool g_isGameOver = false;
 }
 
-
+// Random float generation (for spawn postions and speed)
 static float randFloat(float a, float b) {
     
     static std::mt19937 rng((unsigned)std::random_device{}());
@@ -67,7 +68,7 @@ static float randFloat(float a, float b) {
     return d(rng);
 }
 
-
+// creates a simple solid color texture for fallback use 
 static sf::Texture createSolidTexture(unsigned size, sf::Color c)
 {
     sf::Image img;
@@ -78,7 +79,7 @@ static sf::Texture createSolidTexture(unsigned size, sf::Color c)
 
     return t;
 }
-
+// spawn a group of zombie coming from random edges of the map 
  
 static void spawnZombies(int count)
 {
@@ -89,7 +90,7 @@ static void spawnZombies(int count)
     {
         float x, y;
 
-        
+        // choose side of screen for spawning 
         int side = (std::rand() % 4) + 1;
 
         if (side == 1)
@@ -125,7 +126,7 @@ static void spawnZombies(int count)
     }
 }
 
-
+// creates a truck and invisible collision box
 
 static void createTruckObstacle(sf::Vector2f position)
 {
@@ -148,6 +149,7 @@ static void createTruckObstacle(sf::Vector2f position)
     truckSprite.setPosition(position);
 
     g_truckSprites.push_back(truckSprite);
+    // collision box 
 
     sf::RectangleShape truckCollision({ collisionWidth, collisionHeight });
 
@@ -161,19 +163,19 @@ static void createTruckObstacle(sf::Vector2f position)
     g_walls.push_back(truckCollision);
 }
 
-
+// initializes the entire game world 
 void GameSystem::init()
 {
-   
+   // loads sprites for images 
     if (!g_playerTex.loadFromFile("assets/player.png")) {
         std::cerr << "cant load assets/player.png\n";
     }
-
+    // zombie texture as well 
     if (!g_zombieTex.loadFromFile("assets/zombie.png")) {
         std::cerr << "cant load assets/zombie.png\n";
     }
 
-    
+    // map texture as well
     if (!g_mapTex.loadFromFile("assets/map.png")) {
         std::cerr << "cant load assets/map.png. will use default background.\n";
     }
@@ -188,11 +190,11 @@ void GameSystem::init()
 
         g_mapSprite.setScale(scaleX, scaleY);
     }
-
+    // clear previous world 
     g_walls.clear(); 
-
+    
     g_truckSprites.clear(); 
-
+    // trucks texture 
     if (!g_truckTex.loadFromFile("assets/truck.png")) {
         std::cerr << "cant load assets/truck.png. No truck added.\n";
     }
@@ -221,11 +223,11 @@ void GameSystem::init()
         }
     }
    
-
+    // creates player
     
     g_player = std::make_unique<Player>(100.f, 100.f, g_playerTex);
 
-    
+    // reset values 
     g_zombies.clear();
 
     g_zombieSpawnTimer = 0.f;
@@ -239,43 +241,43 @@ void GameSystem::init()
     g_score = 0;
     g_isGameOver = false;
 
-   
+   // start with first wave
     spawnZombies(g_zombiesPerWave);
 }
-
+// reset games back to initial state
 void GameSystem::reset()
 {
     init();
 }
-
+// frees dynamic memory
 void GameSystem::clean()
 {
     g_player.reset();
     g_zombies.clear();
     g_walls.clear();
 }
-
+// return current score
 int GameSystem::getScore() const
 {
     return g_score;
 }
-
+// checks if game is over 
 bool GameSystem::isGameOver() const
 {
     return g_isGameOver;
 }
-
+// main update function 
 void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 {
     g_damageCooldown -= dt;
-
+    // store previous postion for wall collision rollback
     sf::Vector2f prevPos = g_player->getCenter();
-
+    // update player controls
     g_player->handleInput(window, dt);
     g_player->update(dt);
     g_player->updateBullets(dt);
 
-    
+    // keep players inside map bounds 
     sf::FloatRect pBounds = g_player->getBounds();
 
     float halfWidth = pBounds.width / 2.f;
@@ -298,7 +300,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
     
     g_player->setPosition(pos);
 
-    
+    // player vs wall collision 
     pBounds = g_player->getBounds();
     for (auto& w : g_walls)
     {
@@ -309,14 +311,14 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
             break;
         }
     }
-
+    // updates zombies 
   
     sf::Vector2f p = g_player->getCenter();
 
     for (auto& z : g_zombies)
         z.update(p, dt, g_walls); 
 
-    
+    // check damage to player
     if (g_damageCooldown <= 0.f)
     {
         for (auto& z : g_zombies)
@@ -332,12 +334,12 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         }
     }
 
-    
+    // Bullet collisions 
     for (auto& b : g_player->getBullets())
     {
         if (!b.isAlive()) continue;
 
-        
+        // bullet vs wall 
         bool hitWall = false;
 
         for (auto& w : g_walls)
@@ -369,14 +371,14 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         }
     }
 
-    
+    // remove dead zombies 
     g_zombies.erase(
         std::remove_if(g_zombies.begin(), g_zombies.end(),
             [](const Zombie& z) { return z.isDead(); }),
         g_zombies.end()
     );
 
-    
+    // difficulty scaling
     g_difficultyTimer += dt;
     if (g_difficultyTimer >= g_difficultyIncreaseInterval)
     {
@@ -385,7 +387,7 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
         g_zombiesPerWave += 3;
     }
 
-    
+    // spawn wave
     g_zombieSpawnTimer += dt;
     if (g_zombieSpawnTimer >= g_zombieSpawnInterval)
     {
@@ -393,17 +395,17 @@ void GameSystem::update(const float& dt, const sf::RenderWindow& window)
 
         spawnZombies(g_zombiesPerWave);
     }
-
+    // check if game is over 
     
     if (g_player->getHP() <= 0)
     {
         g_isGameOver = true;
     }
 }
-
+// Renders map, walls, obstacles, zombies, player, and HUD
 void GameSystem::render(sf::RenderWindow& window)
 {
-    
+    // draw map background 
     if (g_mapTex.getSize().x > 0) {
         window.draw(g_mapSprite);
     }
@@ -412,22 +414,22 @@ void GameSystem::render(sf::RenderWindow& window)
         window.clear(sf::Color(25, 25, 40));
     }
 
-    
+    // walls invinsible used for debugging 
     for (auto& w : g_walls)
         window.draw(w);
 
-    
+    // trucks visible obstacles
     for (const auto& truckSprite : g_truckSprites) {
         window.draw(truckSprite);
     }
 
-    
+    // zombies
     for (auto& z : g_zombies)
         z.draw(window);
-
+    // player
     g_player->draw(window);
 
-    
+    // HUD
     sf::Font hudFont;
     if (!hudFont.loadFromFile("assets/arial.ttf")) {
         

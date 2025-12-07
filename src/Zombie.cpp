@@ -3,7 +3,7 @@
 #include <random>
 #include <algorithm>
 #include <SFML/Graphics.hpp>
-
+// helper random float generator for speed and spawing 
 static float randFloat(float a, float b) {
     static std::mt19937 rng((unsigned)std::random_device{}());
 
@@ -11,7 +11,7 @@ static float randFloat(float a, float b) {
 
     return d(rng);
 }
-
+// constructor assigns random speed and scales sprite uniformly 
 Zombie::Zombie(float x, float y, sf::Texture& texture)
     : speed(randFloat(40.f, 90.f)), hp(MAX_HP)
 {
@@ -22,14 +22,14 @@ Zombie::Zombie(float x, float y, sf::Texture& texture)
     sprite.setOrigin(b.width / 2.f, b.height / 2.f);
 
     sprite.setPosition(x, y);
-
+    // scale to 30 
     float desired = 30.f;
 
     float scale = desired / std::max(b.width, b.height);
 
     sprite.setScale(scale, scale);
 }
-
+// updates move directly towards player without collision
 
 void Zombie::update(const sf::Vector2f& playerPos, float dt)
 {
@@ -42,7 +42,7 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt)
 
     if (len <= 0.f) return;
 
-    dir /= len;
+    dir /= len; // normalize
 
     sprite.move(dir * speed * dt);
 
@@ -51,7 +51,7 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt)
     sprite.setRotation(angle + 90.f);
 }
 
-
+// collision aware update: attempts to avoid walls by sliding
 void Zombie::update(const sf::Vector2f& playerPos, float dt,
     const std::vector<sf::RectangleShape>& walls)
 {
@@ -66,14 +66,14 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
     if (len <= 0.f) return;
     dir /= len;
 
-
+    // moving towards player
     sprite.move(dir * speed * dt);
 
   
     sf::FloatRect nextBounds = getBounds();
     bool collided = false;
 
-    
+    // check for wall collisions
     for (const auto& w : walls)
     {
         if (nextBounds.intersects(w.getGlobalBounds()))
@@ -85,10 +85,10 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
 
     if (collided)
     {
-       
+       // undo movement 
         sprite.move(-dir * speed * dt);
 
-        
+        // Attempt a perpendicular slide
         sf::Vector2f perp = { dir.y, -dir.x }; 
 
         
@@ -131,7 +131,7 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
             sprite.setPosition(leftTry);
         else if (rightOK)
             sprite.setPosition(rightTry);
-       
+       // stuck temporary
     }
 
     
@@ -139,7 +139,7 @@ void Zombie::update(const sf::Vector2f& playerPos, float dt,
     sprite.setRotation(angle + 90.f);
 }
 
-
+// draw zombie sprite and simple HP bar above its head
 void Zombie::draw(sf::RenderWindow& window) const
 {
     if (hp <= 0)
@@ -147,7 +147,7 @@ void Zombie::draw(sf::RenderWindow& window) const
 
     window.draw(sprite);
 
-    
+    //draw HP bar only if alive
     sf::Vector2f p = sprite.getPosition();
 
     sf::RectangleShape back({ 30.f, 4.f });
