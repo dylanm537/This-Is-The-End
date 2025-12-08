@@ -6,6 +6,34 @@ Shoot, dodge, and outlast the undead assault every second alive increases your s
 
 Web Page - https://baddattitude.itch.io/this-is-the-end
 
+# Running the game
+
+A pre-built windows installer is available to download on the web page, this is recommended to use - https://baddattitude.itch.io/this-is-the-end
+
+# Building from source
+
+Requirements : 
+
+cmake 3.16+
+c++17 compatible compiler
+git
+
+Steps : 
+
+Clone repo git clone --recurse-submodules https://github.com/dylanm537/This-Is-The-End.git
+
+if you have already cloned run :
+
+git submodule update --init --recursive
+
+then build the project
+
+mkdir build
+cd build
+cmake ..
+cmake --build .
+
+
 # Features
 
 Smooth top-down movement
