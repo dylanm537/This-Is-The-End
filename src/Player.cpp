@@ -98,6 +98,7 @@ void Player::draw(sf::RenderWindow& window) const
 void Player::shootTowards(const sf::Vector2f& target)
 {
     Bullet b;
+
     b.shape = sf::CircleShape(4.f);
 
     b.shape.setOrigin(4.f, 4.f);

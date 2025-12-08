@@ -30,6 +30,7 @@ public:
 
     void shootTowards(const sf::Vector2f& target);
     void updateBullets(float dt);
+
     // player sprite is centered and scaled for consistency
     sf::FloatRect getBounds() const { return sprite.getGlobalBounds(); }
 
@@ -40,6 +41,7 @@ public:
     void takeDamage(int amount) { hp -= amount; if (hp < 0) hp = 0; }
 
     int getHP() const { return hp; }
+
     //bullets collision handling in GameSystem
     std::vector<Bullet>& getBullets() { return bullets; }
 
